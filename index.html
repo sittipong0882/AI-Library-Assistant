@@ -6,6 +6,9 @@
   <title>ระบบค้นหาหนังสืออัจฉริยะ</title>
   <script src="/_sdk/element_sdk.js"></script>
   <script src="/_sdk/data_sdk.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
         body {
             box-sizing: border-box;
@@ -113,7 +116,7 @@
             }
         }
         
-        .login-modal {
+        .modal {
             display: none;
             position: fixed;
             top: 0;
@@ -124,22 +127,26 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            overflow-y: auto;
         }
         
-        .login-modal.active {
+        .modal.active {
             display: flex;
         }
         
-        .login-box {
+        .modal-box {
             background: white;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-            max-width: 400px;
+            max-width: 600px;
             width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+            margin: 20px;
         }
         
-        .login-box h2 {
+        .modal-box h2 {
             color: #667eea;
             margin: 0 0 20px 0;
             text-align: center;
@@ -156,21 +163,29 @@
             font-weight: 600;
         }
         
-        .form-group input {
+        .form-group input,
+        .form-group textarea {
             width: 100%;
             padding: 12px;
             border: 2px solid #e0e0e0;
             border-radius: 8px;
             font-size: 14px;
             transition: border-color 0.3s;
+            font-family: inherit;
         }
         
-        .form-group input:focus {
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus,
+        .form-group textarea:focus {
             outline: none;
             border-color: #667eea;
         }
         
-        .login-buttons {
+        .form-buttons {
             display: flex;
             gap: 10px;
             margin-top: 20px;
@@ -281,6 +296,15 @@
         
         .btn-success:hover {
             background: #229954;
+        }
+        
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c0392b;
         }
         
         .btn-voice {
@@ -437,6 +461,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
         .admin-header h2 {
@@ -455,6 +481,44 @@
             margin: 0 0 15px 0;
         }
         
+        .upload-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            margin-bottom: 15px;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        .file-input-label {
+            display: block;
+            padding: 15px;
+            background: #f8f9ff;
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #e8ebff;
+            border-color: #5568d3;
+        }
+        
         .book-list {
             max-height: 500px;
             overflow-y: auto;
@@ -466,21 +530,21 @@
             border-radius: 8px;
             margin-bottom: 10px;
             border-left: 4px solid #667eea;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
         }
         
-        .quantity-controls {
+        .book-details {
+            flex: 1;
+            min-width: 200px;
+        }
+        
+        .book-actions {
             display: flex;
             gap: 10px;
-            margin-top: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .quantity-input {
-            padding: 8px;
-            border: 2px solid #e0e0e0;
-            border-radius: 6px;
-            width: 80px;
-            font-size: 14px;
         }
         
         .stats-section {
@@ -540,6 +604,178 @@
             border-radius: 6px;
             font-size: 14px;
         }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .admin-search-section {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .admin-search-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .admin-search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .news-slider {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .news-slider h3 {
+            color: #667eea;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+        }
+        
+        .news-slide {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .news-slide.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .news-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        
+        .news-content {
+            color: #333;
+            line-height: 1.6;
+        }
+        
+        .news-indicators {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .news-indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #ddd;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .news-indicator.active {
+            background: #667eea;
+        }
+        
+        .image-preview {
+            max-width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .news-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        
+        .news-thumbnail {
+            width: 100px;
+            height: 100px;
+            object-fit: cover;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+        
+        .news-details {
+            flex: 1;
+        }
+        
+        .news-actions {
+            display: flex;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.4s;
+            border-radius: 24px;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .toggle-slider {
+            background-color: #27ae60;
+        }
+        
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
     </style>
   <style>@view-transition { navigation: auto; }</style>
   <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
@@ -550,6 +786,11 @@
     <div class="header">
      <h1 id="system-title">🔍 ระบบค้นหาหนังสืออัจฉริยะ</h1>
      <p id="welcome-message">ยินดีต้อนรับสู่ระบบค้นหาหนังสือด้วยเสียงและ AI</p><button class="admin-toggle" id="admin-toggle">👤 เข้าสู่ระบบแอดมิน</button>
+    </div><!-- News Slider -->
+    <div class="news-slider" id="news-slider" style="display: none;">
+     <h3>📰 ข่าวสารและประกาศ</h3>
+     <div id="news-slides-container"></div>
+     <div class="news-indicators" id="news-indicators"></div>
     </div>
     <div class="api-setup">
      <h3>📊 สถานะการเชื่อมต่อ</h3>
@@ -578,36 +819,59 @@
       </div>
       <div class="stat-card">
        <div class="stat-label">
-        หนังสือที่ถูกค้นหาบ่อยที่สุด
+        📚 TOP 5 หนังสือที่ยืมเยอะที่สุด
        </div>
-       <ul class="stat-list" id="most-searched-books"></ul>
+       <ul class="stat-list" id="most-borrowed-books"></ul>
       </div>
       <div class="stat-card">
        <div class="stat-label">
-        คำที่ค้นหาบ่อยที่สุด
+        🔥 คำยอดฮิตที่มาค้นหา
        </div>
        <ul class="stat-list" id="most-searched-terms"></ul>
+      </div>
+      <div class="stat-card">
+       <div class="stat-label">
+        📖 หมวดหนังสือที่ถูกยืมเยอะที่สุด
+       </div>
+       <ul class="stat-list" id="most-borrowed-categories"></ul>
       </div>
      </div>
     </div>
    </div><!-- Admin View -->
    <div id="admin-view" class="admin-section">
     <div class="admin-header">
-     <h2>👨‍💼 ระบบจัดการแอดมิน</h2><button class="btn btn-secondary" id="logout-btn">ออกจากระบบ</button>
+     <h2>👨‍💼 ระบบจัดการแอดมิน</h2>
+     <div style="display: flex; gap: 10px; flex-wrap: wrap;"><button class="btn btn-success" id="add-book-btn">➕ เพิ่มหนังสือ</button> <button class="btn btn-primary" id="add-news-btn">📰 เพิ่มข่าวสาร</button> <button class="btn btn-secondary" id="logout-btn">ออกจากระบบ</button>
+     </div>
     </div>
     <div class="book-management">
-     <h3>📚 จัดการหนังสือทั้งหมด</h3>
-     <div class="book-list" id="admin-book-list"></div>
+     <h3>📤 อัพโหลดไฟล์ Excel</h3>
+     <div class="upload-section">
+      <div class="file-input-wrapper"><input type="file" id="excel-file" accept=".xlsx, .xls"> <label class="file-input-label" for="excel-file"> 📁 คลิกเพื่อเลือกไฟล์ Excel<br><small style="color: #999;">รองรับไฟล์ .xlsx และ .xls</small> </label>
+      </div><button class="btn btn-primary" id="upload-btn" style="width: 100%;"> <span>📤</span> <span>อัพโหลดและบันทึก</span> </button>
+     </div>
+    </div>
+    <div class="book-management">
+     <h3>📚 จัดการหนังสือทั้งหมด (<span id="book-count">0</span> เล่ม)</h3>
+     <div class="admin-search-section"><input type="text" class="admin-search-input" id="admin-search-input" placeholder="🔍 ค้นหาหนังสือ (ชื่อเรื่อง, เลขเรียก, ผู้แต่ง, หมวด)">
+     </div>
+     <div class="book-list" id="admin-book-list">
+      <div class="loading">
+       กำลังโหลดข้อมูล...
+      </div>
+     </div>
+    </div>
+    <div class="book-management">
+     <h3>📰 จัดการข่าวสาร (<span id="news-count">0</span> รายการ)</h3>
+     <div class="book-list" id="admin-news-list">
+      <div class="loading">
+       กำลังโหลดข้อมูล...
+      </div>
+     </div>
     </div>
     <div class="stats-section">
      <h3>📊 สถิติการยืม</h3>
      <div class="stats-grid">
-      <div class="stat-card">
-       <div class="stat-label">
-        หนังสือที่ถูกยืมบ่อยที่สุด
-       </div>
-       <ul class="stat-list" id="most-borrowed-books"></ul>
-      </div>
       <div class="stat-card">
        <div class="stat-value" id="total-books">
         0
@@ -624,33 +888,132 @@
         ยืมไปทั้งหมด
        </div>
       </div>
+      <div class="stat-card">
+       <div class="stat-value" id="total-available">
+        0
+       </div>
+       <div class="stat-label">
+        คงเหลือ
+       </div>
+      </div>
      </div>
     </div>
    </div>
   </div><!-- Login Modal -->
-  <div class="login-modal" id="login-modal">
-   <div class="login-box">
+  <div class="modal" id="login-modal">
+   <div class="modal-box">
     <h2>🔐 เข้าสู่ระบบแอดมิน</h2>
     <form id="login-form">
      <div class="form-group"><label for="username">ชื่อผู้ใช้</label> <input type="text" id="username" required>
      </div>
      <div class="form-group"><label for="password">รหัสผ่าน</label> <input type="password" id="password" required>
      </div>
-     <div class="login-buttons"><button type="submit" class="btn btn-primary" style="flex: 1;">เข้าสู่ระบบ</button> <button type="button" class="btn btn-secondary" id="cancel-login" style="flex: 1;">ยกเลิก</button>
+     <div class="form-buttons"><button type="submit" class="btn btn-primary" style="flex: 1;">เข้าสู่ระบบ</button> <button type="button" class="btn btn-secondary" id="cancel-login" style="flex: 1;">ยกเลิก</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Add Book Modal -->
+  <div class="modal" id="add-book-modal">
+   <div class="modal-box">
+    <h2>➕ เพิ่มหนังสือใหม่</h2>
+    <form id="add-book-form">
+     <div class="form-group"><label for="book-title">ชื่อเรื่อง *</label> <input type="text" id="book-title" required>
+     </div>
+     <div class="form-group"><label for="book-author">ชื่อผู้แต่ง *</label> <input type="text" id="book-author" required>
+     </div>
+     <div class="form-group"><label for="book-category">หมวด *</label> <input type="text" id="book-category" required>
+     </div>
+     <div class="form-group"><label for="book-call-number">เลขเรียกหนังสือ *</label> <input type="text" id="book-call-number" required>
+     </div>
+     <div class="form-group"><label for="book-abstract">บทคัดย่อ</label> <textarea id="book-abstract"></textarea>
+     </div>
+     <div class="form-group"><label for="book-quantity">จำนวนหนังสือ *</label> <input type="number" id="book-quantity" min="1" value="1" required>
+     </div>
+     <div class="form-buttons"><button type="submit" class="btn btn-success" style="flex: 1;"> <span>💾</span> <span>บันทึก</span> </button> <button type="button" class="btn btn-secondary" id="cancel-add-book" style="flex: 1;">ยกเลิก</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Edit Book Modal -->
+  <div class="modal" id="edit-book-modal">
+   <div class="modal-box">
+    <h2>✏️ แก้ไขข้อมูลหนังสือ</h2>
+    <form id="edit-book-form"><input type="hidden" id="edit-book-id">
+     <div class="form-group"><label for="edit-book-title">ชื่อเรื่อง *</label> <input type="text" id="edit-book-title" required>
+     </div>
+     <div class="form-group"><label for="edit-book-author">ชื่อผู้แต่ง *</label> <input type="text" id="edit-book-author" required>
+     </div>
+     <div class="form-group"><label for="edit-book-category">หมวด *</label> <input type="text" id="edit-book-category" required>
+     </div>
+     <div class="form-group"><label for="edit-book-call-number">เลขเรียกหนังสือ *</label> <input type="text" id="edit-book-call-number" required>
+     </div>
+     <div class="form-group"><label for="edit-book-abstract">บทคัดย่อ</label> <textarea id="edit-book-abstract"></textarea>
+     </div>
+     <div class="form-group"><label for="edit-book-quantity">จำนวนหนังสือ *</label> <input type="number" id="edit-book-quantity" min="0" required>
+     </div>
+     <div class="form-group"><label for="edit-book-borrowed">จำนวนที่ยืมไป</label> <input type="number" id="edit-book-borrowed" min="0" value="0">
+     </div>
+     <div class="form-buttons"><button type="submit" class="btn btn-success" style="flex: 1;"> <span>💾</span> <span>บันทึก</span> </button> <button type="button" class="btn btn-secondary" id="cancel-edit-book" style="flex: 1;">ยกเลิก</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Add News Modal -->
+  <div class="modal" id="add-news-modal">
+   <div class="modal-box">
+    <h2>📰 เพิ่มข่าวสารใหม่</h2>
+    <form id="add-news-form">
+     <div class="form-group"><label for="news-title">หัวข้อข่าว *</label> <input type="text" id="news-title" required>
+     </div>
+     <div class="form-group"><label for="news-content">เนื้อหาข่าว *</label> <textarea id="news-content" required style="min-height: 120px;"></textarea>
+     </div>
+     <div class="form-group"><label for="news-image">รูปภาพข่าว (แนะนำขนาด 400x200 px) *</label> <input type="file" id="news-image" accept="image/*" required> <img id="news-image-preview" class="image-preview" style="display: none;">
+     </div>
+     <div class="form-group"><label style="display: flex; align-items: center; gap: 10px;"> <input type="checkbox" id="news-visible" checked> <span>แสดงข่าวนี้ที่หน้าหลัก</span> </label>
+     </div>
+     <div class="form-buttons"><button type="submit" class="btn btn-success" style="flex: 1;"> <span>💾</span> <span>บันทึก</span> </button> <button type="button" class="btn btn-secondary" id="cancel-add-news" style="flex: 1;">ยกเลิก</button>
+     </div>
+    </form>
+   </div>
+  </div><!-- Edit News Modal -->
+  <div class="modal" id="edit-news-modal">
+   <div class="modal-box">
+    <h2>✏️ แก้ไขข่าวสาร</h2>
+    <form id="edit-news-form"><input type="hidden" id="edit-news-id">
+     <div class="form-group"><label for="edit-news-title">หัวข้อข่าว *</label> <input type="text" id="edit-news-title" required>
+     </div>
+     <div class="form-group"><label for="edit-news-content">เนื้อหาข่าว *</label> <textarea id="edit-news-content" required style="min-height: 120px;"></textarea>
+     </div>
+     <div class="form-group"><label for="edit-news-image">รูปภาพข่าว (แนะนำขนาด 400x200 px)</label> <input type="file" id="edit-news-image" accept="image/*"> <img id="edit-news-image-preview" class="image-preview" style="display: none;">
+     </div>
+     <div class="form-buttons"><button type="submit" class="btn btn-success" style="flex: 1;"> <span>💾</span> <span>บันทึก</span> </button> <button type="button" class="btn btn-secondary" id="cancel-edit-news" style="flex: 1;">ยกเลิก</button>
      </div>
     </form>
    </div>
   </div>
   <script>
-        // Google Sheets Configuration
-        const SHEET_ID = '1FQfOrqiXUnvc55FfEm56yomQyqbd06mPf9HHSETgXfw';
-        const SHEET_NAME = 'Books';
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBZTETR4YN1DQFww57n9h0UV0XT7IBUGLY",
+            authDomain: "ai-library-assistant-3d45e.firebaseapp.com",
+            projectId: "ai-library-assistant-3d45e",
+            storageBucket: "ai-library-assistant-3d45e.firebasestorage.app",
+            messagingSenderId: "266038692063",
+            appId: "1:266038692063:web:8e5522d9a676e88f24816a",
+            measurementId: "G-5W5LJQZVGH"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
         
         // Book database
         let booksDatabase = [];
-        let bookInventory = {};
+        let newsDatabase = [];
         let allData = [];
         let isAdmin = false;
+        let currentEditBookId = null;
+        let currentEditNewsId = null;
+        let newsSliderInterval = null;
+        let currentSlideIndex = 0;
         
         // Configuration
         const defaultConfig = {
@@ -675,9 +1038,6 @@
             onDataChanged(data) {
                 allData = data;
                 updateStats(data);
-                if (isAdmin) {
-                    updateAdminView(data);
-                }
             }
         };
 
@@ -709,116 +1069,151 @@
             }
         }
 
-        // Load books from Google Sheets
-        async function loadBooksFromSheets() {
+        // Load books from Firebase
+        async function loadBooksFromFirebase() {
             const connectionStatus = document.getElementById('connection-status');
             connectionStatus.textContent = '🔄 กำลังโหลดข้อมูล...';
             
             try {
-                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
-                const response = await fetch(csvUrl);
+                const snapshot = await db.collection('books').get();
+                booksDatabase = [];
                 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                
-                const csvText = await response.text();
-                const rows = parseCSV(csvText);
-                
-                if (rows.length <= 1) {
-                    throw new Error('ไม่พบข้อมูลใน Google Sheets');
-                }
-                
-                // Parse data from sheets (skip header row)
-                booksDatabase = rows.slice(1).map(row => {
-                    const shelf = row[0] || '';
-                    const title = row[1] || '';
-                    const author = row[2] || '';
-                    const category = row[3] || '';
-                    const abstract = row[4] || '';
-                    
-                    const keywords = [
-                        ...shelf.split(' '),
-                        ...title.split(' '),
-                        ...author.split(' '),
-                        ...category.split(' '),
-                        ...abstract.split(' ')
-                    ].filter(word => word.length > 1);
-                    
-                    return {
-                        shelf,
-                        title,
-                        author,
-                        category,
-                        abstract,
-                        keywords
-                    };
-                }).filter(book => book.title);
-                
-                // Initialize inventory
-                booksDatabase.forEach(book => {
-                    if (!bookInventory[book.shelf]) {
-                        bookInventory[book.shelf] = {
-                            total: 0,
-                            borrowed: 0,
-                            available: 0
-                        };
-                    }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    booksDatabase.push({
+                        id: doc.id,
+                        callNumber: data.callNumber || '',
+                        title: data.title || '',
+                        author: data.author || '',
+                        category: data.category || '',
+                        abstract: data.abstract || '',
+                        quantity: data.quantity || 0,
+                        borrowed: data.borrowed || 0,
+                        available: (data.quantity || 0) - (data.borrowed || 0),
+                        keywords: [
+                            ...(data.callNumber || '').split(' '),
+                            ...(data.title || '').split(' '),
+                            ...(data.author || '').split(' '),
+                            ...(data.category || '').split(' '),
+                            ...(data.abstract || '').split(' ')
+                        ].filter(word => word.length > 1)
+                    });
                 });
                 
                 connectionStatus.textContent = `✅ เชื่อมต่อสำเร็จ - พบหนังสือ ${booksDatabase.length} เล่ม`;
                 showStatus(`โหลดข้อมูลสำเร็จ! พบหนังสือ ${booksDatabase.length} เล่ม`, 'success');
                 
+                if (isAdmin) {
+                    loadAdminData();
+                }
+                
+                updateUserStats();
+                
                 return true;
             } catch (error) {
-                connectionStatus.textContent = `❌ เชื่อมต่อล้มเหลว`;
-                showStatus(`ไม่สามารถโหลดข้อมูลจาก Google Sheets`, 'error');
+                console.error('Load error:', error);
+                connectionStatus.textContent = `❌ เชื่อมต่อล้มเหลว: ${error.message}`;
+                showStatus(`ไม่สามารถโหลดข้อมูล: ${error.message}`, 'error');
                 return false;
             }
         }
-
-        // Simple CSV parser
-        function parseCSV(text) {
-            const rows = [];
-            let currentRow = [];
-            let currentField = '';
-            let inQuotes = false;
-            
-            for (let i = 0; i < text.length; i++) {
-                const char = text[i];
-                const nextChar = text[i + 1];
+        
+        // Load news from Firebase
+        async function loadNewsFromFirebase() {
+            try {
+                const snapshot = await db.collection('news').orderBy('createdAt', 'desc').get();
+                newsDatabase = [];
                 
-                if (char === '"') {
-                    if (inQuotes && nextChar === '"') {
-                        currentField += '"';
-                        i++;
-                    } else {
-                        inQuotes = !inQuotes;
-                    }
-                } else if (char === ',' && !inQuotes) {
-                    currentRow.push(currentField);
-                    currentField = '';
-                } else if ((char === '\n' || char === '\r') && !inQuotes) {
-                    if (currentField || currentRow.length > 0) {
-                        currentRow.push(currentField);
-                        rows.push(currentRow);
-                        currentRow = [];
-                        currentField = '';
-                    }
-                    if (char === '\r' && nextChar === '\n') {
-                        i++;
-                    }
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    newsDatabase.push({
+                        id: doc.id,
+                        title: data.title || '',
+                        content: data.content || '',
+                        imageUrl: data.imageUrl || '',
+                        visible: data.visible !== false,
+                        createdAt: data.createdAt || ''
+                    });
+                });
+                
+                if (isAdmin) {
+                    loadAdminNews();
                 } else {
-                    currentField += char;
+                    loadNewsSlider();
                 }
+                
+                return true;
+            } catch (error) {
+                console.error('Load news error:', error);
+                return false;
+            }
+        }
+        
+        // Load news slider
+        function loadNewsSlider() {
+            const visibleNews = newsDatabase.filter(n => n.visible);
+            const newsSlider = document.getElementById('news-slider');
+            const slidesContainer = document.getElementById('news-slides-container');
+            const indicatorsContainer = document.getElementById('news-indicators');
+            
+            if (visibleNews.length === 0) {
+                newsSlider.style.display = 'none';
+                return;
             }
             
-            if (currentField || currentRow.length > 0) {
-                currentRow.push(currentField);
-                rows.push(currentRow);
+            newsSlider.style.display = 'block';
+            slidesContainer.innerHTML = '';
+            indicatorsContainer.innerHTML = '';
+            
+            visibleNews.forEach((news, index) => {
+                const slide = document.createElement('div');
+                slide.className = `news-slide ${index === 0 ? 'active' : ''}`;
+                slide.innerHTML = `
+                    <img src="${news.imageUrl}" alt="${news.title}" class="news-image" onerror="this.src=''; this.alt='รูปภาพไม่สามารถโหลดได้'; this.style.display='none';">
+                    <h4 style="color: #667eea; margin: 0 0 10px 0;">${news.title}</h4>
+                    <div class="news-content">${news.content}</div>
+                `;
+                slidesContainer.appendChild(slide);
+                
+                const indicator = document.createElement('div');
+                indicator.className = `news-indicator ${index === 0 ? 'active' : ''}`;
+                indicator.addEventListener('click', () => showSlide(index));
+                indicatorsContainer.appendChild(indicator);
+            });
+            
+            currentSlideIndex = 0;
+            startNewsSlider();
+        }
+        
+        // Start news slider
+        function startNewsSlider() {
+            if (newsSliderInterval) {
+                clearInterval(newsSliderInterval);
             }
             
-            return rows;
+            newsSliderInterval = setInterval(() => {
+                const visibleNews = newsDatabase.filter(n => n.visible);
+                if (visibleNews.length > 1) {
+                    currentSlideIndex = (currentSlideIndex + 1) % visibleNews.length;
+                    showSlide(currentSlideIndex);
+                }
+            }, 5000);
+        }
+        
+        // Show specific slide
+        function showSlide(index) {
+            const slides = document.querySelectorAll('.news-slide');
+            const indicators = document.querySelectorAll('.news-indicator');
+            
+            slides.forEach((slide, i) => {
+                slide.classList.toggle('active', i === index);
+            });
+            
+            indicators.forEach((indicator, i) => {
+                indicator.classList.toggle('active', i === index);
+            });
+            
+            currentSlideIndex = index;
         }
 
         // Show status message
@@ -867,6 +1262,146 @@
             document.getElementById('user-view').style.display = 'block';
             document.getElementById('admin-view').classList.remove('active');
             showStatus('ออกจากระบบสำเร็จ', 'success');
+        });
+
+        // Add book modal
+        document.getElementById('add-book-btn').addEventListener('click', () => {
+            document.getElementById('add-book-modal').classList.add('active');
+        });
+
+        document.getElementById('cancel-add-book').addEventListener('click', () => {
+            document.getElementById('add-book-modal').classList.remove('active');
+            document.getElementById('add-book-form').reset();
+        });
+
+        document.getElementById('add-book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const bookData = {
+                title: document.getElementById('book-title').value.trim(),
+                author: document.getElementById('book-author').value.trim(),
+                category: document.getElementById('book-category').value.trim(),
+                callNumber: document.getElementById('book-call-number').value.trim(),
+                abstract: document.getElementById('book-abstract').value.trim(),
+                quantity: parseInt(document.getElementById('book-quantity').value) || 0,
+                borrowed: 0,
+                createdAt: new Date().toISOString()
+            };
+            
+            try {
+                showStatus('กำลังบันทึกข้อมูล...', 'info');
+                await db.collection('books').add(bookData);
+                showStatus('เพิ่มหนังสือสำเร็จ!', 'success');
+                document.getElementById('add-book-modal').classList.remove('active');
+                document.getElementById('add-book-form').reset();
+                await loadBooksFromFirebase();
+            } catch (error) {
+                console.error('Error adding book:', error);
+                showStatus('เกิดข้อผิดพลาดในการเพิ่มหนังสือ', 'error');
+            }
+        });
+
+        // Edit book modal
+        document.getElementById('cancel-edit-book').addEventListener('click', () => {
+            document.getElementById('edit-book-modal').classList.remove('active');
+            document.getElementById('edit-book-form').reset();
+            currentEditBookId = null;
+        });
+
+        document.getElementById('edit-book-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditBookId) return;
+            
+            const bookData = {
+                title: document.getElementById('edit-book-title').value.trim(),
+                author: document.getElementById('edit-book-author').value.trim(),
+                category: document.getElementById('edit-book-category').value.trim(),
+                callNumber: document.getElementById('edit-book-call-number').value.trim(),
+                abstract: document.getElementById('edit-book-abstract').value.trim(),
+                quantity: parseInt(document.getElementById('edit-book-quantity').value) || 0,
+                borrowed: parseInt(document.getElementById('edit-book-borrowed').value) || 0,
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                showStatus('กำลังบันทึกข้อมูล...', 'info');
+                await db.collection('books').doc(currentEditBookId).update(bookData);
+                showStatus('แก้ไขข้อมูลสำเร็จ!', 'success');
+                document.getElementById('edit-book-modal').classList.remove('active');
+                document.getElementById('edit-book-form').reset();
+                currentEditBookId = null;
+                await loadBooksFromFirebase();
+            } catch (error) {
+                console.error('Error updating book:', error);
+                showStatus('เกิดข้อผิดพลาดในการแก้ไขข้อมูล', 'error');
+            }
+        });
+
+        // Excel upload
+        document.getElementById('upload-btn').addEventListener('click', async () => {
+            const fileInput = document.getElementById('excel-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                showStatus('กรุณาเลือกไฟล์ Excel', 'error');
+                return;
+            }
+            
+            showStatus('กำลังอ่านไฟล์...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+                    
+                    if (jsonData.length === 0) {
+                        showStatus('ไม่พบข้อมูลในไฟล์', 'error');
+                        return;
+                    }
+                    
+                    showStatus(`กำลังบันทึก ${jsonData.length} รายการ...`, 'info');
+                    
+                    let successCount = 0;
+                    let errorCount = 0;
+                    
+                    for (const row of jsonData) {
+                        try {
+                            const bookData = {
+                                title: (row['ชื่อเรื่อง'] || row['title'] || '').toString().trim(),
+                                author: (row['ชื่อผู้แต่ง'] || row['author'] || '').toString().trim(),
+                                category: (row['หมวด'] || row['category'] || '').toString().trim(),
+                                callNumber: (row['เลขเรียกหนังสือ'] || row['callNumber'] || '').toString().trim(),
+                                abstract: (row['บทคัดย่อ'] || row['abstract'] || '').toString().trim(),
+                                quantity: parseInt(row['จำนวนหนังสือ'] || row['quantity'] || 0),
+                                borrowed: 0,
+                                createdAt: new Date().toISOString()
+                            };
+                            
+                            if (bookData.title && bookData.callNumber) {
+                                await db.collection('books').add(bookData);
+                                successCount++;
+                            }
+                        } catch (error) {
+                            console.error('Error adding book:', error);
+                            errorCount++;
+                        }
+                    }
+                    
+                    showStatus(`บันทึกสำเร็จ ${successCount} รายการ${errorCount > 0 ? `, ล้มเหลว ${errorCount} รายการ` : ''}`, 'success');
+                    fileInput.value = '';
+                    await loadBooksFromFirebase();
+                    
+                } catch (error) {
+                    console.error('Error processing file:', error);
+                    showStatus('เกิดข้อผิดพลาดในการอ่านไฟล์', 'error');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
         });
 
         // Voice search
@@ -937,14 +1472,13 @@
             const results = searchBooks(query);
             displayResults(results, query);
             await logSearch(query, results.length, method);
-            speakResults(results, query);
         }
 
         // Search books
         function searchBooks(query) {
             const queryLower = query.toLowerCase();
             return booksDatabase.filter(book => {
-                const shelfMatch = book.shelf.toLowerCase().includes(queryLower);
+                const callNumberMatch = book.callNumber.toLowerCase().includes(queryLower);
                 const titleMatch = book.title.toLowerCase().includes(queryLower);
                 const authorMatch = book.author.toLowerCase().includes(queryLower);
                 const categoryMatch = book.category.toLowerCase().includes(queryLower);
@@ -954,7 +1488,7 @@
                     queryLower.includes(kw.toLowerCase())
                 );
                 
-                return shelfMatch || titleMatch || authorMatch || categoryMatch || abstractMatch || keywordMatch;
+                return callNumberMatch || titleMatch || authorMatch || categoryMatch || abstractMatch || keywordMatch;
             });
         }
 
@@ -978,8 +1512,7 @@
             }
             
             results.forEach(book => {
-                const inventory = bookInventory[book.shelf] || { total: 0, borrowed: 0, available: 0 };
-                const available = inventory.available;
+                const available = book.available;
                 
                 let availabilityClass = 'unavailable';
                 let availabilityText = 'ไม่มีให้ยืม';
@@ -995,12 +1528,12 @@
                 const bookCard = document.createElement('div');
                 bookCard.className = 'book-card';
                 bookCard.innerHTML = `
-                    <div class="book-call-number">เลขเรียกหนังสือ: ${book.category}</div>
-                    <div class="book-title">ชื่อหนังสือ: ${book.shelf}</div>
+                    <div class="book-call-number">เลขเรียกหนังสือ: ${book.callNumber}</div>
+                    <div class="book-title">${book.title}</div>
                     <div class="book-info">
-                        <div class="book-info-item">ชื่อผู้แต่ง:${book.title} </div>
-                        <div class="book-info-item">หมวด: ${book.author}</div>
-                        ${book.abstract ? `<div class="book-info-item">บทคัดย่อ: ${book.abstract}</div>` : ''}
+                        <div class="book-info-item"><strong>ผู้แต่ง:</strong> ${book.author}</div>
+                        <div class="book-info-item"><strong>หมวด:</strong> ${book.category}</div>
+                        ${book.abstract ? `<div class="book-info-item"><strong>บทคัดย่อ:</strong> ${book.abstract}</div>` : ''}
                     </div>
                     <span class="book-availability ${availabilityClass}">${availabilityText}</span>
                 `;
@@ -1010,33 +1543,13 @@
             showStatus(`พบหนังสือ ${results.length} เล่ม`, 'success');
         }
 
-        // Speak results
-        function speakResults(results, query) {
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance();
-                utterance.lang = 'th-TH';
-                
-                if (results.length === 0) {
-                    utterance.text = `ไม่พบหนังสือที่ตรงกับคำค้นหา ${query}`;
-                } else if (results.length === 1) {
-                    const inventory = bookInventory[results[0].shelf] || { available: 0 };
-                    utterance.text = `พบหนังสือ 1 เล่ม คือ ${results[0].title} มีให้ยืม ${inventory.available} เล่ม`;
-                } else {
-                    utterance.text = `พบหนังสือ ${results.length} เล่ม`;
-                }
-                
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
         // Log search
         async function logSearch(query, resultsCount, method) {
             const logEntry = {
                 query: query,
                 timestamp: new Date().toISOString(),
                 results_count: resultsCount,
-                search_method: method,
-                type: 'search'
+                search_method: method
             };
             
             const result = await window.dataSdk.create(logEntry);
@@ -1047,13 +1560,15 @@
 
         // Update stats
         function updateStats(data) {
-            const searches = data.filter(d => d.type === 'search');
+            const searches = data;
             document.getElementById('total-searches').textContent = searches.length;
             
             // Most searched terms
             const termCounts = {};
             searches.forEach(s => {
-                termCounts[s.query] = (termCounts[s.query] || 0) + 1;
+                if (s.query) {
+                    termCounts[s.query] = (termCounts[s.query] || 0) + 1;
+                }
             });
             const topTerms = Object.entries(termCounts)
                 .sort((a, b) => b[1] - a[1])
@@ -1064,124 +1579,409 @@
                 ? topTerms.map(([term, count]) => `<li>${term} (${count} ครั้ง)</li>`).join('')
                 : '<li>ยังไม่มีข้อมูล</li>';
             
-            // Most searched books (based on search results)
-            const bookSearchCounts = {};
-            searches.forEach(s => {
-                const results = searchBooks(s.query);
-                results.forEach(book => {
-                    bookSearchCounts[book.title] = (bookSearchCounts[book.title] || 0) + 1;
-                });
+            updateUserStats();
+        }
+        
+        // Update user stats
+        function updateUserStats() {
+            // TOP 5 หนังสือที่ยืมเยอะที่สุด
+            const topBorrowed = [...booksDatabase]
+                .sort((a, b) => b.borrowed - a.borrowed)
+                .slice(0, 5);
+            
+            const borrowedListEl = document.getElementById('most-borrowed-books');
+            borrowedListEl.innerHTML = topBorrowed.length > 0
+                ? topBorrowed.map(book => `<li>${book.title} (${book.borrowed} เล่ม)</li>`).join('')
+                : '<li>ยังไม่มีข้อมูล</li>';
+            
+            // TOP 5 หมวดหนังสือที่ถูกยืมเยอะที่สุด
+            const categoryCounts = {};
+            booksDatabase.forEach(book => {
+                if (book.category && book.borrowed > 0) {
+                    categoryCounts[book.category] = (categoryCounts[book.category] || 0) + book.borrowed;
+                }
             });
-            const topBooks = Object.entries(bookSearchCounts)
+            const topCategories = Object.entries(categoryCounts)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 5);
             
-            const booksListEl = document.getElementById('most-searched-books');
-            booksListEl.innerHTML = topBooks.length > 0
-                ? topBooks.map(([book, count]) => `<li>${book} (${count} ครั้ง)</li>`).join('')
+            const categoriesListEl = document.getElementById('most-borrowed-categories');
+            categoriesListEl.innerHTML = topCategories.length > 0
+                ? topCategories.map(([cat, count]) => `<li>${cat} (${count} เล่ม)</li>`).join('')
                 : '<li>ยังไม่มีข้อมูล</li>';
         }
 
         // Admin functions
         async function loadAdminData() {
+            filterAdminBooks('');
+            
+            let totalQuantity = 0;
+            let totalBorrowed = 0;
+            let totalAvailable = 0;
+            
+            booksDatabase.forEach(book => {
+                totalQuantity += book.quantity;
+                totalBorrowed += book.borrowed;
+                totalAvailable += book.available;
+            });
+            
+            document.getElementById('total-books').textContent = totalQuantity;
+            document.getElementById('total-borrowed').textContent = totalBorrowed;
+            document.getElementById('total-available').textContent = totalAvailable;
+        }
+        
+        // Filter admin books
+        function filterAdminBooks(query) {
             const adminBookList = document.getElementById('admin-book-list');
             adminBookList.innerHTML = '';
             
-            booksDatabase.forEach(book => {
-                const inventory = bookInventory[book.shelf];
+            const queryLower = query.toLowerCase();
+            const filteredBooks = query ? booksDatabase.filter(book => 
+                book.title.toLowerCase().includes(queryLower) ||
+                book.callNumber.toLowerCase().includes(queryLower) ||
+                book.author.toLowerCase().includes(queryLower) ||
+                book.category.toLowerCase().includes(queryLower)
+            ) : booksDatabase;
+            
+            if (filteredBooks.length === 0) {
+                adminBookList.innerHTML = '<div class="loading">ไม่พบหนังสือที่ค้นหา</div>';
+                document.getElementById('book-count').textContent = '0';
+                return;
+            }
+            
+            document.getElementById('book-count').textContent = filteredBooks.length;
+            
+            filteredBooks.forEach(book => {
                 const card = document.createElement('div');
                 card.className = 'admin-book-card';
                 card.innerHTML = `
-                    <div style="font-weight: 700; color: #667eea; margin-bottom: 8px;">${book.title}</div>
-                    <div style="font-size: 14px; color: #666; margin-bottom: 10px;">เลขเรียก: ${book.shelf}</div>
-                    <div class="quantity-controls">
-                        <input type="number" class="quantity-input" placeholder="จำนวนทั้งหมด" value="${inventory.total}" id="total-${book.shelf}">
-                        <input type="number" class="quantity-input" placeholder="ยืมไป" value="${inventory.borrowed}" id="borrowed-${book.shelf}">
-                        <button class="btn btn-success" onclick="updateInventory('${book.shelf}')">อัพเดท</button>
+                    <div class="book-details">
+                        <div style="font-weight: 700; color: #667eea; margin-bottom: 5px;">${book.title}</div>
+                        <div style="font-size: 14px; color: #666;">เลขเรียก: ${book.callNumber} | ผู้แต่ง: ${book.author}</div>
+                        <div style="font-size: 14px; color: #27ae60; margin-top: 5px;">
+                            ทั้งหมด: ${book.quantity} | ยืม: ${book.borrowed} | คงเหลือ: ${book.available}
+                        </div>
                     </div>
-                    <div style="margin-top: 10px; font-size: 14px; color: #27ae60;">คงเหลือ: ${inventory.available} เล่ม</div>
+                    <div class="book-actions">
+                        <button class="btn btn-primary" onclick="editBook('${book.id}')" style="padding: 8px 15px; font-size: 14px;">
+                            ✏️ แก้ไข
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteBook('${book.id}', '${book.title}')" style="padding: 8px 15px; font-size: 14px;">
+                            🗑️ ลบ
+                        </button>
+                    </div>
                 `;
                 adminBookList.appendChild(card);
             });
-            
-            updateAdminView(allData);
         }
-
-        async function updateInventory(shelf) {
-            const totalInput = document.getElementById(`total-${shelf}`);
-            const borrowedInput = document.getElementById(`borrowed-${shelf}`);
+        
+        // Load admin news
+        function loadAdminNews() {
+            const adminNewsList = document.getElementById('admin-news-list');
+            adminNewsList.innerHTML = '';
             
-            const total = parseInt(totalInput.value) || 0;
-            const borrowed = parseInt(borrowedInput.value) || 0;
-            const available = Math.max(0, total - borrowed);
-            
-            bookInventory[shelf] = { total, borrowed, available };
-            
-            const inventoryEntry = {
-                type: 'inventory',
-                book_id: shelf,
-                total_quantity: total,
-                borrowed_quantity: borrowed,
-                available_quantity: available,
-                timestamp: new Date().toISOString()
-            };
-            
-            const result = await window.dataSdk.create(inventoryEntry);
-            if (result.isOk) {
-                showStatus('อัพเดทข้อมูลสำเร็จ', 'success');
-                loadAdminData();
-            } else {
-                showStatus('เกิดข้อผิดพลาดในการอัพเดท', 'error');
+            if (newsDatabase.length === 0) {
+                adminNewsList.innerHTML = '<div class="loading">ยังไม่มีข่าวสารในระบบ</div>';
+                document.getElementById('news-count').textContent = '0';
+                return;
             }
+            
+            document.getElementById('news-count').textContent = newsDatabase.length;
+            
+            newsDatabase.forEach(news => {
+                const card = document.createElement('div');
+                card.className = 'news-card';
+                card.innerHTML = `
+                    <img src="${news.imageUrl}" alt="${news.title}" class="news-thumbnail" onerror="this.src=''; this.alt='ไม่มีรูป'; this.style.display='none';">
+                    <div class="news-details">
+                        <div style="font-weight: 700; color: #667eea; margin-bottom: 5px;">${news.title}</div>
+                        <div style="font-size: 14px; color: #666; margin-bottom: 8px;">${news.content.substring(0, 100)}${news.content.length > 100 ? '...' : ''}</div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 13px; color: #999;">สถานะ:</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" ${news.visible ? 'checked' : ''} onchange="toggleNewsVisibility('${news.id}', this.checked)">
+                                <span class="toggle-slider"></span>
+                            </label>
+                            <span style="font-size: 13px; color: ${news.visible ? '#27ae60' : '#999'};">${news.visible ? 'แสดง' : 'ซ่อน'}</span>
+                        </div>
+                    </div>
+                    <div class="news-actions">
+                        <button class="btn btn-primary" onclick="editNews('${news.id}')" style="padding: 8px 15px; font-size: 14px;">
+                            ✏️ แก้ไข
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteNews('${news.id}', '${news.title}')" style="padding: 8px 15px; font-size: 14px;">
+                            🗑️ ลบ
+                        </button>
+                    </div>
+                `;
+                adminNewsList.appendChild(card);
+            });
         }
 
-        function updateAdminView(data) {
-            const inventoryData = data.filter(d => d.type === 'inventory');
+        // Edit book
+        window.editBook = function(bookId) {
+            const book = booksDatabase.find(b => b.id === bookId);
+            if (!book) return;
             
-            // Update inventory from data
-            inventoryData.forEach(inv => {
-                if (inv.book_id) {
-                    bookInventory[inv.book_id] = {
-                        total: inv.total_quantity || 0,
-                        borrowed: inv.borrowed_quantity || 0,
-                        available: inv.available_quantity || 0
-                    };
+            currentEditBookId = bookId;
+            document.getElementById('edit-book-id').value = bookId;
+            document.getElementById('edit-book-title').value = book.title;
+            document.getElementById('edit-book-author').value = book.author;
+            document.getElementById('edit-book-category').value = book.category;
+            document.getElementById('edit-book-call-number').value = book.callNumber;
+            document.getElementById('edit-book-abstract').value = book.abstract;
+            document.getElementById('edit-book-quantity').value = book.quantity;
+            document.getElementById('edit-book-borrowed').value = book.borrowed;
+            
+            document.getElementById('edit-book-modal').classList.add('active');
+        };
+
+        // Delete book
+        window.deleteBook = async function(bookId, bookTitle) {
+            const confirmBox = document.createElement('div');
+            confirmBox.className = 'modal active';
+            confirmBox.innerHTML = `
+                <div class="modal-box" style="max-width: 400px;">
+                    <h2>⚠️ ยืนยันการลบ</h2>
+                    <p style="text-align: center; margin: 20px 0;">คุณต้องการลบหนังสือ<br><strong>"${bookTitle}"</strong><br>ใช่หรือไม่?</p>
+                    <div class="form-buttons">
+                        <button class="btn btn-danger" id="confirm-delete" style="flex: 1;">ลบ</button>
+                        <button class="btn btn-secondary" id="cancel-delete" style="flex: 1;">ยกเลิก</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+            
+            document.getElementById('confirm-delete').addEventListener('click', async () => {
+                try {
+                    showStatus('กำลังลบข้อมูล...', 'info');
+                    await db.collection('books').doc(bookId).delete();
+                    showStatus('ลบหนังสือสำเร็จ!', 'success');
+                    document.body.removeChild(confirmBox);
+                    await loadBooksFromFirebase();
+                } catch (error) {
+                    console.error('Error deleting book:', error);
+                    showStatus('เกิดข้อผิดพลาดในการลบหนังสือ', 'error');
                 }
             });
             
-            // Calculate totals
-            let totalBooks = 0;
-            let totalBorrowed = 0;
-            Object.values(bookInventory).forEach(inv => {
-                totalBooks += inv.total;
-                totalBorrowed += inv.borrowed;
+            document.getElementById('cancel-delete').addEventListener('click', () => {
+                document.body.removeChild(confirmBox);
+            });
+        };
+
+        // Admin search books
+        document.getElementById('admin-search-input').addEventListener('input', (e) => {
+            filterAdminBooks(e.target.value);
+        });
+        
+        // Add news modal
+        document.getElementById('add-news-btn').addEventListener('click', () => {
+            document.getElementById('add-news-modal').classList.add('active');
+        });
+        
+        document.getElementById('cancel-add-news').addEventListener('click', () => {
+            document.getElementById('add-news-modal').classList.remove('active');
+            document.getElementById('add-news-form').reset();
+            document.getElementById('news-image-preview').style.display = 'none';
+        });
+        
+        // Preview news image
+        document.getElementById('news-image').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const preview = document.getElementById('news-image-preview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Add news form
+        document.getElementById('add-news-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const file = document.getElementById('news-image').files[0];
+            if (!file) {
+                showStatus('กรุณาเลือกรูปภาพ', 'error');
+                return;
+            }
+            
+            showStatus('กำลังบันทึกข้อมูล...', 'info');
+            
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const newsData = {
+                    title: document.getElementById('news-title').value.trim(),
+                    content: document.getElementById('news-content').value.trim(),
+                    imageUrl: event.target.result,
+                    visible: document.getElementById('news-visible').checked,
+                    createdAt: new Date().toISOString()
+                };
+                
+                try {
+                    await db.collection('news').add(newsData);
+                    showStatus('เพิ่มข่าวสารสำเร็จ!', 'success');
+                    document.getElementById('add-news-modal').classList.remove('active');
+                    document.getElementById('add-news-form').reset();
+                    document.getElementById('news-image-preview').style.display = 'none';
+                    await loadNewsFromFirebase();
+                } catch (error) {
+                    console.error('Error adding news:', error);
+                    showStatus('เกิดข้อผิดพลาดในการเพิ่มข่าวสาร', 'error');
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        // Edit news modal
+        document.getElementById('cancel-edit-news').addEventListener('click', () => {
+            document.getElementById('edit-news-modal').classList.remove('active');
+            document.getElementById('edit-news-form').reset();
+            document.getElementById('edit-news-image-preview').style.display = 'none';
+            currentEditNewsId = null;
+        });
+        
+        // Preview edit news image
+        document.getElementById('edit-news-image').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const preview = document.getElementById('edit-news-image-preview');
+                    preview.src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+        
+        // Edit news form
+        document.getElementById('edit-news-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!currentEditNewsId) return;
+            
+            showStatus('กำลังบันทึกข้อมูล...', 'info');
+            
+            const file = document.getElementById('edit-news-image').files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async (event) => {
+                    const newsData = {
+                        title: document.getElementById('edit-news-title').value.trim(),
+                        content: document.getElementById('edit-news-content').value.trim(),
+                        imageUrl: event.target.result,
+                        updatedAt: new Date().toISOString()
+                    };
+                    
+                    try {
+                        await db.collection('news').doc(currentEditNewsId).update(newsData);
+                        showStatus('แก้ไขข่าวสารสำเร็จ!', 'success');
+                        document.getElementById('edit-news-modal').classList.remove('active');
+                        document.getElementById('edit-news-form').reset();
+                        document.getElementById('edit-news-image-preview').style.display = 'none';
+                        currentEditNewsId = null;
+                        await loadNewsFromFirebase();
+                    } catch (error) {
+                        console.error('Error updating news:', error);
+                        showStatus('เกิดข้อผิดพลาดในการแก้ไขข่าวสาร', 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            } else {
+                const newsData = {
+                    title: document.getElementById('edit-news-title').value.trim(),
+                    content: document.getElementById('edit-news-content').value.trim(),
+                    updatedAt: new Date().toISOString()
+                };
+                
+                try {
+                    await db.collection('news').doc(currentEditNewsId).update(newsData);
+                    showStatus('แก้ไขข่าวสารสำเร็จ!', 'success');
+                    document.getElementById('edit-news-modal').classList.remove('active');
+                    document.getElementById('edit-news-form').reset();
+                    currentEditNewsId = null;
+                    await loadNewsFromFirebase();
+                } catch (error) {
+                    console.error('Error updating news:', error);
+                    showStatus('เกิดข้อผิดพลาดในการแก้ไขข่าวสาร', 'error');
+                }
+            }
+        });
+        
+        // Edit news
+        window.editNews = function(newsId) {
+            const news = newsDatabase.find(n => n.id === newsId);
+            if (!news) return;
+            
+            currentEditNewsId = newsId;
+            document.getElementById('edit-news-title').value = news.title;
+            document.getElementById('edit-news-content').value = news.content;
+            
+            if (news.imageUrl) {
+                const preview = document.getElementById('edit-news-image-preview');
+                preview.src = news.imageUrl;
+                preview.style.display = 'block';
+            }
+            
+            document.getElementById('edit-news-modal').classList.add('active');
+        };
+        
+        // Delete news
+        window.deleteNews = async function(newsId, newsTitle) {
+            const confirmBox = document.createElement('div');
+            confirmBox.className = 'modal active';
+            confirmBox.innerHTML = `
+                <div class="modal-box" style="max-width: 400px;">
+                    <h2>⚠️ ยืนยันการลบ</h2>
+                    <p style="text-align: center; margin: 20px 0;">คุณต้องการลบข่าวสาร<br><strong>"${newsTitle}"</strong><br>ใช่หรือไม่?</p>
+                    <div class="form-buttons">
+                        <button class="btn btn-danger" id="confirm-delete-news" style="flex: 1;">ลบ</button>
+                        <button class="btn btn-secondary" id="cancel-delete-news" style="flex: 1;">ยกเลิก</button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(confirmBox);
+            
+            document.getElementById('confirm-delete-news').addEventListener('click', async () => {
+                try {
+                    showStatus('กำลังลบข้อมูล...', 'info');
+                    await db.collection('news').doc(newsId).delete();
+                    showStatus('ลบข่าวสารสำเร็จ!', 'success');
+                    document.body.removeChild(confirmBox);
+                    await loadNewsFromFirebase();
+                } catch (error) {
+                    console.error('Error deleting news:', error);
+                    showStatus('เกิดข้อผิดพลาดในการลบข่าวสาร', 'error');
+                }
             });
             
-            document.getElementById('total-books').textContent = totalBooks;
-            document.getElementById('total-borrowed').textContent = totalBorrowed;
-            
-            // Most borrowed books
-            const borrowedCounts = Object.entries(bookInventory)
-                .map(([shelf, inv]) => {
-                    const book = booksDatabase.find(b => b.shelf === shelf);
-                    return { title: book ? book.title : shelf, borrowed: inv.borrowed };
-                })
-                .filter(b => b.borrowed > 0)
-                .sort((a, b) => b.borrowed - a.borrowed)
-                .slice(0, 5);
-            
-            const borrowedListEl = document.getElementById('most-borrowed-books');
-            borrowedListEl.innerHTML = borrowedCounts.length > 0
-                ? borrowedCounts.map(b => `<li>${b.title} (${b.borrowed} เล่ม)</li>`).join('')
-                : '<li>ยังไม่มีข้อมูล</li>';
-        }
-
-        // Make updateInventory global
-        window.updateInventory = updateInventory;
-
+            document.getElementById('cancel-delete-news').addEventListener('click', () => {
+                document.body.removeChild(confirmBox);
+            });
+        };
+        
+        // Toggle news visibility
+        window.toggleNewsVisibility = async function(newsId, visible) {
+            try {
+                await db.collection('news').doc(newsId).update({ visible: visible });
+                showStatus(`${visible ? 'แสดง' : 'ซ่อน'}ข่าวสารสำเร็จ!`, 'success');
+                await loadNewsFromFirebase();
+            } catch (error) {
+                console.error('Error toggling news visibility:', error);
+                showStatus('เกิดข้อผิดพลาดในการเปลี่ยนสถานะ', 'error');
+            }
+        };
+        
         // Initialize on load
         initializeSdks();
-        loadBooksFromSheets();
+        loadBooksFromFirebase();
+        loadNewsFromFirebase();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99abedc0f0d155a1',t:'MTc2MjUwOTA1MS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99ac77c6058b55a1',t:'MTc2MjUxNDcwNC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
