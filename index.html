@@ -1509,6 +1509,7 @@
         let isAiListening = false;
         let isSpeaking = false;
         let speechSynthesis = window.speechSynthesis;
+        let voicesLoaded = false;
 
         // Initialize Speech Recognition
         if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
@@ -1522,6 +1523,25 @@
             aiRecognition.lang = 'th-TH';
             aiRecognition.continuous = false;
             aiRecognition.interimResults = false;
+        }
+        
+        // Load voices for Text-to-Speech (important for mobile)
+        if (speechSynthesis) {
+            // Load voices immediately
+            speechSynthesis.getVoices();
+            
+            // Listen for voices changed event (important for mobile browsers)
+            speechSynthesis.onvoiceschanged = () => {
+                voicesLoaded = true;
+                console.log('Voices loaded:', speechSynthesis.getVoices().length);
+            };
+            
+            // Check if voices are already loaded
+            setTimeout(() => {
+                if (speechSynthesis.getVoices().length > 0) {
+                    voicesLoaded = true;
+                }
+            }, 100);
         }
 
         // Data SDK Handler
@@ -2691,7 +2711,7 @@
                 messagesContainer.appendChild(aiMsg);
                 messagesContainer.scrollTop = messagesContainer.scrollHeight;
                 
-                // Speak the response
+                // Speak the response (with improved mobile support)
                 speakText(response.speechText);
             }, 1000);
         }
@@ -2967,13 +2987,14 @@
             return shuffled.slice(0, 3);
         }
         
-        // Text to Speech
+        // Text to Speech - IMPROVED FOR MOBILE
         function speakText(text) {
             if (isSpeaking) {
                 stopSpeaking();
             }
             
             if (!speechSynthesis) {
+                console.log('Speech Synthesis not supported');
                 return;
             }
             
@@ -2982,28 +3003,96 @@
                 speakingIndicator.style.display = 'inline-block';
             }
             
-            const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'th-TH';
-            utterance.rate = 0.9;
-            utterance.pitch = 1;
-            utterance.volume = 1;
-            
-            utterance.onend = () => {
-                isSpeaking = false;
-                if (speakingIndicator) {
-                    speakingIndicator.style.display = 'none';
+            // Function to actually speak
+            const doSpeak = () => {
+                // Cancel any ongoing speech first
+                speechSynthesis.cancel();
+                
+                const utterance = new SpeechSynthesisUtterance(text);
+                
+                // Try to find Thai voice
+                const voices = speechSynthesis.getVoices();
+                console.log('Available voices:', voices.length);
+                
+                const thaiVoice = voices.find(voice => 
+                    voice.lang.startsWith('th') || 
+                    voice.lang.includes('TH')
+                );
+                
+                if (thaiVoice) {
+                    utterance.voice = thaiVoice;
+                    console.log('Using Thai voice:', thaiVoice.name);
+                } else {
+                    console.log('No Thai voice found, using default');
                 }
+                
+                utterance.lang = 'th-TH';
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                utterance.volume = 1;
+                
+                utterance.onstart = () => {
+                    isSpeaking = true;
+                    console.log('Speech started');
+                };
+                
+                utterance.onend = () => {
+                    isSpeaking = false;
+                    if (speakingIndicator) {
+                        speakingIndicator.style.display = 'none';
+                    }
+                    console.log('Speech ended');
+                };
+                
+                utterance.onerror = (event) => {
+                    isSpeaking = false;
+                    if (speakingIndicator) {
+                        speakingIndicator.style.display = 'none';
+                    }
+                    console.error('Speech error:', event.error);
+                };
+                
+                // Small delay before speaking (helps on mobile)
+                setTimeout(() => {
+                    isSpeaking = true;
+                    speechSynthesis.speak(utterance);
+                    console.log('Speech command sent');
+                }, 100);
             };
             
-            utterance.onerror = () => {
-                isSpeaking = false;
-                if (speakingIndicator) {
-                    speakingIndicator.style.display = 'none';
-                }
-            };
-            
-            isSpeaking = true;
-            speechSynthesis.speak(utterance);
+            // Check if voices are loaded
+            const voices = speechSynthesis.getVoices();
+            if (voices.length > 0) {
+                console.log('Voices already loaded');
+                doSpeak();
+            } else {
+                console.log('Waiting for voices to load...');
+                // Wait for voices to load (important for mobile browsers)
+                let voiceLoadAttempts = 0;
+                const maxAttempts = 10;
+                
+                const checkVoices = setInterval(() => {
+                    const currentVoices = speechSynthesis.getVoices();
+                    voiceLoadAttempts++;
+                    
+                    if (currentVoices.length > 0) {
+                        console.log('Voices loaded after', voiceLoadAttempts, 'attempts');
+                        clearInterval(checkVoices);
+                        doSpeak();
+                    } else if (voiceLoadAttempts >= maxAttempts) {
+                        console.log('Max attempts reached, speaking anyway');
+                        clearInterval(checkVoices);
+                        doSpeak();
+                    }
+                }, 100);
+                
+                // Also listen for the event
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('Voices changed event fired');
+                    clearInterval(checkVoices);
+                    doSpeak();
+                };
+            }
         }
         
         // Stop Speaking
@@ -3015,6 +3104,7 @@
                 if (speakingIndicator) {
                     speakingIndicator.style.display = 'none';
                 }
+                console.log('Speech stopped');
             }
         }
         
@@ -3023,5 +3113,5 @@
         loadBooksFromFirebase();
         loadNewsFromFirebase();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adae45f20f55a1',t:'MTc2MjUyNzQyMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adcfb9a12155a1',t:'MTc2MjUyODc5My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
