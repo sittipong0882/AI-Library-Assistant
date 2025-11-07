@@ -3006,7 +3006,7 @@
             return shuffled.slice(0, 3);
         }
         
-        // Text to Speech - AUTOMATIC REAL-TIME CONVERSATION
+        // Text to Speech - MOBILE OPTIMIZED
         function speakText(text) {
             // Stop any ongoing speech
             if (isSpeaking) {
@@ -3021,10 +3021,10 @@
             
             const speakingIndicator = document.getElementById('speaking-indicator');
             
-            console.log('🎤 Starting automatic speech...');
+            console.log('🎤 Starting speech for mobile...');
             console.log('📝 Text to speak:', text.substring(0, 50) + '...');
             
-            // Cancel any pending speech
+            // CRITICAL: Cancel any pending speech and wait longer for mobile
             speechSynthesis.cancel();
             
             // Show speaking indicator
@@ -3032,46 +3032,56 @@
                 speakingIndicator.style.display = 'inline-block';
             }
             
-            // Wait a bit for cancel to complete
+            // Mobile browsers need more time to initialize
             setTimeout(() => {
-                const utterance = new SpeechSynthesisUtterance(text);
-                
-                // Get available voices
+                // Force reload voices for mobile
                 const voices = speechSynthesis.getVoices();
                 console.log('🔊 Available voices:', voices.length);
                 
-                // Try to find Thai voice
-                let thaiVoice = voices.find(voice => 
-                    voice.lang === 'th-TH' || 
-                    voice.lang === 'th' ||
-                    voice.name.includes('Thai') ||
-                    voice.name.includes('ไทย')
-                );
+                // Create utterance
+                const utterance = new SpeechSynthesisUtterance(text);
                 
+                // Try to find Thai voice (mobile-friendly approach)
+                let thaiVoice = null;
+                
+                // Method 1: Look for exact Thai voice
+                thaiVoice = voices.find(voice => voice.lang === 'th-TH');
+                
+                // Method 2: Look for any Thai variant
                 if (!thaiVoice) {
                     thaiVoice = voices.find(voice => voice.lang.startsWith('th'));
                 }
                 
+                // Method 3: Look for Thai in name
+                if (!thaiVoice) {
+                    thaiVoice = voices.find(voice => 
+                        voice.name.toLowerCase().includes('thai') ||
+                        voice.name.includes('ไทย')
+                    );
+                }
+                
                 if (thaiVoice) {
                     utterance.voice = thaiVoice;
-                    console.log('✅ Using Thai voice:', thaiVoice.name);
+                    console.log('✅ Using Thai voice:', thaiVoice.name, thaiVoice.lang);
                 } else {
                     console.log('⚠️ No Thai voice found, using default');
+                    // Use first available voice on mobile
                     if (voices.length > 0) {
                         utterance.voice = voices[0];
+                        console.log('Using voice:', voices[0].name, voices[0].lang);
                     }
                 }
                 
-                // Set speech parameters
+                // Mobile-optimized speech parameters
                 utterance.lang = 'th-TH';
-                utterance.rate = 0.9;
+                utterance.rate = 0.85; // Slightly slower for mobile
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
                 
                 // Event handlers
                 utterance.onstart = () => {
                     isSpeaking = true;
-                    console.log('✅ Speech started automatically');
+                    console.log('✅ Speech started on mobile');
                 };
                 
                 utterance.onend = () => {
@@ -3087,25 +3097,50 @@
                     if (speakingIndicator) {
                         speakingIndicator.style.display = 'none';
                     }
-                    console.error('❌ Speech error:', event.error);
+                    console.error('❌ Speech error:', event.error, event);
+                    
+                    // Try fallback for mobile
+                    if (event.error === 'not-allowed' || event.error === 'interrupted') {
+                        console.log('⚠️ Speech blocked, may need user interaction first');
+                    }
                 };
                 
-                // Speak automatically!
+                // MOBILE FIX: Speak immediately without additional delays
                 try {
                     isSpeaking = true;
                     speechSynthesis.speak(utterance);
-                    console.log('🎤 Speaking automatically...');
+                    console.log('🎤 Speaking on mobile...');
                     
-                    // Monitor speech status
+                    // Mobile-specific: Resume if paused (iOS fix)
                     setTimeout(() => {
-                        if (!speechSynthesis.speaking && !speechSynthesis.pending) {
-                            console.log('⚠️ Speech not started, retrying...');
-                            speechSynthesis.cancel();
-                            setTimeout(() => {
-                                speechSynthesis.speak(utterance);
-                            }, 100);
+                        if (speechSynthesis.paused) {
+                            console.log('⚠️ Speech paused, resuming...');
+                            speechSynthesis.resume();
                         }
-                    }, 500);
+                        
+                        // Check if speech actually started
+                        if (!speechSynthesis.speaking && !speechSynthesis.pending) {
+                            console.log('⚠️ Speech not started on mobile, retrying...');
+                            speechSynthesis.cancel();
+                            
+                            // Retry with shorter text for mobile
+                            const shortUtterance = new SpeechSynthesisUtterance(text);
+                            shortUtterance.lang = 'th-TH';
+                            shortUtterance.rate = 0.85;
+                            shortUtterance.pitch = 1.0;
+                            shortUtterance.volume = 1.0;
+                            if (thaiVoice) shortUtterance.voice = thaiVoice;
+                            
+                            shortUtterance.onend = () => {
+                                isSpeaking = false;
+                                if (speakingIndicator) {
+                                    speakingIndicator.style.display = 'none';
+                                }
+                            };
+                            
+                            speechSynthesis.speak(shortUtterance);
+                        }
+                    }, 300);
                     
                 } catch (error) {
                     console.error('❌ Exception while speaking:', error);
@@ -3115,7 +3150,7 @@
                     }
                 }
                 
-            }, 100);
+            }, 250); // Longer delay for mobile initialization
         }
         
         // Stop Speaking
@@ -3136,5 +3171,5 @@
         loadBooksFromFirebase();
         loadNewsFromFirebase();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adec66b39255a1',t:'MTc2MjUyOTk2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adf7f3c4d055a1',t:'MTc2MjUzMDQ0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
