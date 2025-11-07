@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="th">
+ <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบค้นหาหนังสืออัจฉริยะ</title>
+  <script src="/_sdk/element_sdk.js"></script>
+  <script src="/_sdk/data_sdk.js"></script>
+  <style>
+        body {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Sarabun', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        html {
+            height: 100%;
+        }
+        
+        .container {
+            width: 90%;
+            max-width: 900px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            margin: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                width: 95%;
+                padding: 20px;
+                margin: 10px;
+                border-radius: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                width: 100%;
+                padding: 15px;
+                margin: 0;
+                border-radius: 0;
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #667eea;
+            margin: 0 0 10px 0;
+            font-size: 32px;
+        }
+        
+        .header p {
+            color: #666;
+            margin: 0;
+            font-size: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 24px;
+            }
+            
+            .header p {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 20px;
+            }
+            
+            .header p {
+                font-size: 13px;
+            }
+        }
+        
+        .api-setup {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .api-setup h3 {
+            margin: 0 0 15px 0;
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .api-input-group {
+            margin-bottom: 15px;
+        }
+        
+        .api-input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .api-input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        .api-input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .search-section {
+            margin-bottom: 25px;
+        }
+        
+        .search-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        @media (max-width: 768px) {
+            .search-controls {
+                flex-direction: column;
+            }
+            
+            .search-input {
+                width: 100%;
+            }
+        }
+        
+        .search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .btn {
+                width: 100%;
+                padding: 12px 20px;
+                font-size: 15px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .btn {
+                padding: 10px 15px;
+                font-size: 14px;
+            }
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-voice {
+            background: #764ba2;
+            color: white;
+        }
+        
+        .btn-voice:hover {
+            background: #653a8a;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(118, 75, 162, 0.4);
+        }
+        
+        .btn-voice.listening {
+            background: #e74c3c;
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .status-message {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status-message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border-left: 4px solid #1976d2;
+        }
+        
+        .status-message.error {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+        
+        .status-message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+        
+        .results-section {
+            margin-top: 25px;
+        }
+        
+        .results-section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 22px;
+        }
+        
+        .book-card {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .book-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .book-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+        
+        .book-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 768px) {
+            .book-info {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
+        }
+        
+        .book-info-item {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .book-info-item strong {
+            color: #333;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+        }
+        
+        .stats-section h3 {
+            color: #667eea;
+            margin: 0 0 15px 0;
+            font-size: 18px;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stat-value {
+                font-size: 24px;
+            }
+            
+            .stat-label {
+                font-size: 13px;
+            }
+        }
+        
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+    </style>
+  <style>@view-transition { navigation: auto; }</style>
+  <script src="https://cdn.tailwindcss.com" type="text/javascript"></script>
+ </head>
+ <body>
+  <div class="container">
+   <div class="header">
+    <h1 id="system-title">🔍 ระบบค้นหาหนังสืออัจฉริยะ</h1>
+    <p id="welcome-message">ยินดีต้อนรับสู่ระบบค้นหาหนังสือด้วยเสียงและ AI</p>
+   </div>
+   <div class="api-setup">
+    <h3 id="api-instruction">📊 สถานะการเชื่อมต่อ</h3>
+    <div style="display: flex; align-items: center; gap: 10px; padding: 10px; background: white; border-radius: 8px;"><span id="connection-status">🔄 กำลังโหลดข้อมูล...</span>
+    </div>
+   </div>
+   <div class="search-section">
+    <div class="search-controls"><input type="text" class="search-input" id="search-input" placeholder="พิมพ์คำค้นหา เช่น AI, Python, สุขภาพ..."> <button class="btn btn-voice" id="voice-btn"> <span>🎙️</span> <span id="voice-text">พูดค้นหา</span> </button> <button class="btn btn-primary" id="search-btn"> <span>🔍</span> <span>ค้นหา</span> </button>
+    </div>
+    <div class="status-message" id="status-message"></div>
+   </div>
+   <div class="results-section" id="results-section" style="display: none;">
+    <h2>📚 ผลการค้นหา</h2>
+    <div id="results-container"></div>
+   </div>
+   <div class="stats-section">
+    <h3>📊 สถิติการใช้งาน</h3>
+    <div class="stats-grid">
+     <div class="stat-card">
+      <div class="stat-value" id="total-searches">
+       0
+      </div>
+      <div class="stat-label">
+       ครั้งที่ค้นหา
+      </div>
+     </div>
+     <div class="stat-card">
+      <div class="stat-value" id="voice-searches">
+       0
+      </div>
+      <div class="stat-label">
+       ค้นหาด้วยเสียง
+      </div>
+     </div>
+     <div class="stat-card">
+      <div class="stat-value" id="text-searches">
+       0
+      </div>
+      <div class="stat-label">
+       ค้นหาด้วยข้อความ
+      </div>
+     </div>
+    </div>
+   </div>
+  </div>
+  <script>
+        // Google Sheets Configuration
+        const SHEET_ID = '1FQfOrqiXUnvc55FfEm56yomQyqbd06mPf9HHSETgXfw';
+        const SHEET_NAME = 'Books';
+        const SHEET_RANGE = 'A2:E'; // Starting from row 2 to skip headers
+        
+        // Book database (will be loaded from Google Sheets)
+        let booksDatabase = [
+            // Sample data as fallback
+            {
+                title: "พื้นฐานปัญญาประดิษฐ์",
+                author: "ดร.วิทย์ คงเจริญ",
+                category: "วิทยาการคอมพิวเตอร์",
+                shelf: "ชั้น 3",
+                abstract: "หนังสือแนะนำพื้นฐานของปัญญาประดิษฐ์",
+                keywords: ["AI", "ปัญญาประดิษฐ์", "เทคโนโลยี"]
+            },
+            {
+                title: "การเขียนโปรแกรมเบื้องต้น",
+                author: "อ.สมชาย สอนดี",
+                category: "โปรแกรมมิ่ง",
+                shelf: "ชั้น 2",
+                abstract: "เรียนรู้การเขียนโปรแกรมตั้งแต่เริ่มต้น",
+                keywords: ["Python", "Programming", "โปรแกรม"]
+            },
+            {
+                title: "การเรียนรู้ของเครื่อง",
+                author: "ดร.สมปอง ทองแท้",
+                category: "วิทยาการคอมพิวเตอร์",
+                shelf: "ชั้น 3",
+                abstract: "แนะนำ Machine Learning และการประยุกต์ใช้",
+                keywords: ["Machine Learning", "ML", "AI"]
+            },
+            {
+                title: "สุขภาพดีด้วยโยคะ",
+                author: "อ.สมหญิง แข็งแรง",
+                category: "สุขภาพ",
+                shelf: "ชั้น 1",
+                abstract: "คู่มือการออกกำลังกายด้วยโยคะ",
+                keywords: ["สุขภาพ", "โยคะ", "ออกกำลังกาย"]
+            },
+            {
+                title: "Data Science สำหรับผู้เริ่มต้น",
+                author: "ดร.วิเคราะห์ ข้อมูล",
+                category: "วิทยาการข้อมูล",
+                shelf: "ชั้น 3",
+                abstract: "เริ่มต้นเรียนรู้วิทยาการข้อมูล",
+                keywords: ["Data Science", "Python", "วิเคราะห์ข้อมูล"]
+            }
+        ];
+
+        // Load books from Google Sheets
+        async function loadBooksFromSheets() {
+            const connectionStatus = document.getElementById('connection-status');
+            connectionStatus.textContent = '🔄 กำลังโหลดข้อมูล...';
+            
+            try {
+                // Use public access URL for Google Sheets
+                const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&sheet=${SHEET_NAME}`;
+                
+                const response = await fetch(csvUrl);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const csvText = await response.text();
+                const rows = parseCSV(csvText);
+                
+                if (rows.length <= 1) {
+                    throw new Error('ไม่พบข้อมูลใน Google Sheets');
+                }
+                
+                // Parse data from sheets (skip header row)
+                booksDatabase = rows.slice(1).map(row => {
+                    const title = row[0] || '';
+                    const author = row[1] || '';
+                    const category = row[2] || '';
+                    const shelf = row[3] || '';
+                    const abstract = row[4] || '';
+                    
+                    // Generate keywords from all fields
+                    const keywords = [
+                        ...title.split(' '),
+                        ...author.split(' '),
+                        ...category.split(' '),
+                        ...abstract.split(' ')
+                    ].filter(word => word.length > 1);
+                    
+                    return {
+                        title,
+                        author,
+                        category,
+                        shelf,
+                        abstract,
+                        keywords
+                    };
+                }).filter(book => book.title); // Filter out empty rows
+                
+                connectionStatus.textContent = `✅ เชื่อมต่อสำเร็จ - พบหนังสือ ${booksDatabase.length} เล่ม`;
+                showStatus(`โหลดข้อมูลสำเร็จ! พบหนังสือ ${booksDatabase.length} เล่ม`, 'success');
+                
+                return true;
+            } catch (error) {
+                connectionStatus.textContent = `❌ เชื่อมต่อล้มเหลว - ใช้ข้อมูลตัวอย่าง`;
+                showStatus(`ไม่สามารถโหลดข้อมูลจาก Google Sheets ใช้ข้อมูลตัวอย่างแทน`, 'error');
+                return false;
+            }
+        }
+
+        // Simple CSV parser
+        function parseCSV(text) {
+            const rows = [];
+            let currentRow = [];
+            let currentField = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < text.length; i++) {
+                const char = text[i];
+                const nextChar = text[i + 1];
+                
+                if (char === '"') {
+                    if (inQuotes && nextChar === '"') {
+                        currentField += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    currentRow.push(currentField);
+                    currentField = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (currentField || currentRow.length > 0) {
+                        currentRow.push(currentField);
+                        rows.push(currentRow);
+                        currentRow = [];
+                        currentField = '';
+                    }
+                    if (char === '\r' && nextChar === '\n') {
+                        i++;
+                    }
+                } else {
+                    currentField += char;
+                }
+            }
+            
+            if (currentField || currentRow.length > 0) {
+                currentRow.push(currentField);
+                rows.push(currentRow);
+            }
+            
+            return rows;
+        }
+
+        // Configuration
+        const defaultConfig = {
+            system_title: "🔍 ระบบค้นหาหนังสืออัจฉริยะ",
+            welcome_message: "ยินดีต้อนรับสู่ระบบค้นหาหนังสือด้วยเสียงและ AI",
+            api_instruction: "⚙️ กรุณาใส่ API Key ของคุณ"
+        };
+
+        let isListening = false;
+        let recognition = null;
+
+        // Initialize Speech Recognition
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'th-TH';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+        }
+
+        // Data SDK Handler
+        const dataHandler = {
+            onDataChanged(data) {
+                updateStats(data);
+            }
+        };
+
+        // Initialize SDKs
+        async function initializeSdks() {
+            const dataResult = await window.dataSdk.init(dataHandler);
+            if (!dataResult.isOk) {
+                console.error("Failed to initialize data SDK");
+            }
+
+            if (window.elementSdk) {
+                window.elementSdk.init({
+                    defaultConfig,
+                    onConfigChange: async (config) => {
+                        document.getElementById('system-title').textContent = config.system_title || defaultConfig.system_title;
+                        document.getElementById('welcome-message').textContent = config.welcome_message || defaultConfig.welcome_message;
+                        document.getElementById('api-instruction').textContent = config.api_instruction || defaultConfig.api_instruction;
+                    },
+                    mapToCapabilities: (config) => ({
+                        recolorables: [],
+                        borderables: [],
+                        fontEditable: undefined,
+                        fontSizeable: undefined
+                    }),
+                    mapToEditPanelValues: (config) => new Map([
+                        ["system_title", config.system_title || defaultConfig.system_title],
+                        ["welcome_message", config.welcome_message || defaultConfig.welcome_message],
+                        ["api_instruction", config.api_instruction || defaultConfig.api_instruction]
+                    ])
+                });
+            }
+        }
+
+        // Show status message
+        function showStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status-message');
+            statusEl.textContent = message;
+            statusEl.className = `status-message ${type}`;
+            statusEl.style.display = 'block';
+            
+            setTimeout(() => {
+                statusEl.style.display = 'none';
+            }, 5000);
+        }
+
+        // Voice search
+        document.getElementById('voice-btn').addEventListener('click', () => {
+            if (!recognition) {
+                showStatus('เบราว์เซอร์ของคุณไม่รองรับการรับรู้เสียง', 'error');
+                return;
+            }
+
+            if (isListening) {
+                recognition.stop();
+                return;
+            }
+
+            isListening = true;
+            document.getElementById('voice-btn').classList.add('listening');
+            document.getElementById('voice-text').textContent = 'กำลังฟัง...';
+            showStatus('กรุณาพูดคำค้นหา...', 'info');
+
+            recognition.start();
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('search-input').value = transcript;
+                showStatus(`รับเสียง: "${transcript}"`, 'success');
+                performSearch(transcript, 'voice');
+            };
+
+            recognition.onerror = (event) => {
+                showStatus('เกิดข้อผิดพลาดในการรับเสียง', 'error');
+                resetVoiceButton();
+            };
+
+            recognition.onend = () => {
+                resetVoiceButton();
+            };
+        });
+
+        function resetVoiceButton() {
+            isListening = false;
+            document.getElementById('voice-btn').classList.remove('listening');
+            document.getElementById('voice-text').textContent = 'พูดค้นหา';
+        }
+
+        // Text search
+        document.getElementById('search-btn').addEventListener('click', () => {
+            const query = document.getElementById('search-input').value.trim();
+            if (query) {
+                performSearch(query, 'text');
+            } else {
+                showStatus('กรุณาใส่คำค้นหา', 'error');
+            }
+        });
+
+        document.getElementById('search-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                const query = e.target.value.trim();
+                if (query) {
+                    performSearch(query, 'text');
+                }
+            }
+        });
+
+        // Perform search
+        async function performSearch(query, method) {
+            showStatus('กำลังค้นหา...', 'info');
+            
+            // Search in sample database
+            const results = searchBooks(query);
+            
+            // Display results
+            displayResults(results, query);
+            
+            // Log search
+            await logSearch(query, results.length, method);
+            
+            // Speak results
+            speakResults(results, query);
+        }
+
+        // Search books
+        function searchBooks(query) {
+            const queryLower = query.toLowerCase();
+            return booksDatabase.filter(book => {
+                const titleMatch = book.title.toLowerCase().includes(queryLower);
+                const authorMatch = book.author.toLowerCase().includes(queryLower);
+                const categoryMatch = book.category.toLowerCase().includes(queryLower);
+                const abstractMatch = book.abstract.toLowerCase().includes(queryLower);
+                const keywordMatch = book.keywords.some(kw => 
+                    kw.toLowerCase().includes(queryLower) || 
+                    queryLower.includes(kw.toLowerCase())
+                );
+                
+                return titleMatch || authorMatch || categoryMatch || abstractMatch || keywordMatch;
+            });
+        }
+
+        // Display results
+        function displayResults(results, query) {
+            const resultsSection = document.getElementById('results-section');
+            const resultsContainer = document.getElementById('results-container');
+            
+            resultsSection.style.display = 'block';
+            resultsContainer.innerHTML = '';
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="no-results">
+                        <p>😔 ไม่พบหนังสือที่ตรงกับคำค้นหา "${query}"</p>
+                        <p>ลองค้นหาด้วยคำอื่น เช่น AI, Python, สุขภาพ</p>
+                    </div>
+                `;
+                showStatus(`ไม่พบผลลัพธ์สำหรับ "${query}"`, 'error');
+                return;
+            }
+            
+            results.forEach(book => {
+                const bookCard = document.createElement('div');
+                bookCard.className = 'book-card';
+                bookCard.innerHTML = `
+                    <div class="book-title">${book.title}</div>
+                    ${book.abstract ? `<p style="color: #666; margin: 10px 0; font-size: 14px;">${book.abstract}</p>` : ''}
+                    <div class="book-info">
+                        <div class="book-info-item"><strong>ชื่อผู้แต่ง:</strong> ${book.author}</div>
+                        <div class="book-info-item"><strong>หมวด:</strong> ${book.category}</div>
+                        <div class="book-info-item"><strong>เลขเรียกหนังสือ:</strong> ${book.shelf}</div>
+                    </div>
+                `;
+                resultsContainer.appendChild(bookCard);
+            });
+            
+            showStatus(`พบหนังสือ ${results.length} เล่ม`, 'success');
+        }
+
+        // Speak results
+        function speakResults(results, query) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance();
+                utterance.lang = 'th-TH';
+                
+                if (results.length === 0) {
+                    utterance.text = `ไม่พบหนังสือที่ตรงกับคำค้นหา ${query}`;
+                } else if (results.length === 1) {
+                    utterance.text = `พบหนังสือ 1 เล่ม คือ ${results[0].title} อยู่ที่ ${results[0].shelf}`;
+                } else {
+                    utterance.text = `พบหนังสือ ${results.length} เล่ม เล่มแรกคือ ${results[0].title} อยู่ที่ ${results[0].shelf}`;
+                }
+                
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Log search
+        async function logSearch(query, resultsCount, method) {
+            const logEntry = {
+                query: query,
+                timestamp: new Date().toISOString(),
+                results_count: resultsCount,
+                search_method: method
+            };
+            
+            const result = await window.dataSdk.create(logEntry);
+            if (!result.isOk) {
+                console.error("Failed to log search");
+            }
+        }
+
+        // Update stats
+        function updateStats(data) {
+            const totalSearches = data.length;
+            const voiceSearches = data.filter(log => log.search_method === 'voice').length;
+            const textSearches = data.filter(log => log.search_method === 'text').length;
+            
+            document.getElementById('total-searches').textContent = totalSearches;
+            document.getElementById('voice-searches').textContent = voiceSearches;
+            document.getElementById('text-searches').textContent = textSearches;
+        }
+
+        // Initialize on load
+        initializeSdks();
+        
+        // Auto-load books from Google Sheets on page load
+        loadBooksFromSheets();
+    </script>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99ab314d97a8895b',t:'MTc2MjUwMTMzMi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
