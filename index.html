@@ -1940,10 +1940,19 @@
                 transcript = separateStuckWords(transcript);
                 document.getElementById('search-input').value = transcript;
                 showStatus(`รับเสียง: "${transcript}"`, 'success');
-                performSearch(transcript, 'voice');
+                
+                // หยุดไมค์ทันทีหลังรับเสียงเสร็จ
+                recognition.stop();
+                resetVoiceButton();
+                
+                // ค้นหาหลังจากปิดไมค์แล้ว
+                setTimeout(() => {
+                    performSearch(transcript, 'voice');
+                }, 100);
             };
 
             recognition.onerror = (event) => {
+                console.error('Voice search error:', event.error);
                 showStatus('เกิดข้อผิดพลาดในการรับเสียง', 'error');
                 resetVoiceButton();
             };
@@ -2609,6 +2618,7 @@
             
             isAiListening = true;
             document.getElementById('ai-voice-btn').classList.add('listening');
+            showStatus('กรุณาพูดคำถาม...', 'info');
             
             aiRecognition.start();
             
@@ -2617,10 +2627,19 @@
                 // แยกคำที่ติดกันออกจากกัน
                 transcript = separateStuckWords(transcript);
                 document.getElementById('ai-chat-input').value = transcript;
-                sendAiMessage(transcript);
+                
+                // หยุดไมค์ทันทีหลังรับเสียงเสร็จ
+                aiRecognition.stop();
+                resetAiVoiceButton();
+                
+                // ส่งข้อความหลังจากปิดไมค์แล้ว
+                setTimeout(() => {
+                    sendAiMessage(transcript);
+                }, 100);
             };
             
             aiRecognition.onerror = (event) => {
+                console.error('AI Voice error:', event.error);
                 showStatus('เกิดข้อผิดพลาดในการรับเสียง', 'error');
                 resetAiVoiceButton();
             };
@@ -2987,7 +3006,7 @@
             return shuffled.slice(0, 3);
         }
         
-        // Text to Speech - MOBILE OPTIMIZED
+        // Text to Speech - AUTOMATIC REAL-TIME CONVERSATION
         function speakText(text) {
             // Stop any ongoing speech
             if (isSpeaking) {
@@ -2997,20 +3016,21 @@
             
             if (!speechSynthesis) {
                 console.log('❌ Speech Synthesis not supported');
-                showStatus('เบราว์เซอร์ไม่รองรับการอ่านเสียง', 'error');
                 return;
             }
             
             const speakingIndicator = document.getElementById('speaking-indicator');
-            if (speakingIndicator) {
-                speakingIndicator.style.display = 'inline-block';
-            }
             
-            console.log('🎤 Starting speech synthesis...');
+            console.log('🎤 Starting automatic speech...');
             console.log('📝 Text to speak:', text.substring(0, 50) + '...');
             
             // Cancel any pending speech
             speechSynthesis.cancel();
+            
+            // Show speaking indicator
+            if (speakingIndicator) {
+                speakingIndicator.style.display = 'inline-block';
+            }
             
             // Wait a bit for cancel to complete
             setTimeout(() => {
@@ -3020,7 +3040,7 @@
                 const voices = speechSynthesis.getVoices();
                 console.log('🔊 Available voices:', voices.length);
                 
-                // Try to find Thai voice (prefer Google Thai or any Thai voice)
+                // Try to find Thai voice
                 let thaiVoice = voices.find(voice => 
                     voice.lang === 'th-TH' || 
                     voice.lang === 'th' ||
@@ -3028,35 +3048,30 @@
                     voice.name.includes('ไทย')
                 );
                 
-                // If no Thai voice, try any voice that supports Thai
                 if (!thaiVoice) {
-                    thaiVoice = voices.find(voice => 
-                        voice.lang.startsWith('th')
-                    );
+                    thaiVoice = voices.find(voice => voice.lang.startsWith('th'));
                 }
                 
                 if (thaiVoice) {
                     utterance.voice = thaiVoice;
-                    console.log('✅ Using Thai voice:', thaiVoice.name, '(' + thaiVoice.lang + ')');
+                    console.log('✅ Using Thai voice:', thaiVoice.name);
                 } else {
-                    console.log('⚠️ No Thai voice found, using default voice');
-                    // Use first available voice as fallback
+                    console.log('⚠️ No Thai voice found, using default');
                     if (voices.length > 0) {
                         utterance.voice = voices[0];
-                        console.log('📢 Using fallback voice:', voices[0].name);
                     }
                 }
                 
                 // Set speech parameters
                 utterance.lang = 'th-TH';
-                utterance.rate = 0.9;  // Slightly slower for clarity
+                utterance.rate = 0.9;
                 utterance.pitch = 1.0;
                 utterance.volume = 1.0;
                 
                 // Event handlers
                 utterance.onstart = () => {
                     isSpeaking = true;
-                    console.log('✅ Speech started successfully');
+                    console.log('✅ Speech started automatically');
                 };
                 
                 utterance.onend = () => {
@@ -3073,42 +3088,18 @@
                         speakingIndicator.style.display = 'none';
                     }
                     console.error('❌ Speech error:', event.error);
-                    console.error('Error details:', event);
-                    
-                    // Show user-friendly error
-                    if (event.error === 'not-allowed') {
-                        showStatus('กรุณาอนุญาตให้เบราว์เซอร์เล่นเสียง', 'error');
-                    } else if (event.error === 'network') {
-                        showStatus('ไม่สามารถเชื่อมต่อเครือข่ายสำหรับอ่านเสียง', 'error');
-                    } else {
-                        showStatus('เกิดข้อผิดพลาดในการอ่านเสียง: ' + event.error, 'error');
-                    }
                 };
                 
-                utterance.onpause = () => {
-                    console.log('⏸️ Speech paused');
-                };
-                
-                utterance.onresume = () => {
-                    console.log('▶️ Speech resumed');
-                };
-                
-                // Speak!
+                // Speak automatically!
                 try {
                     isSpeaking = true;
                     speechSynthesis.speak(utterance);
-                    console.log('🎤 Speech command sent to browser');
+                    console.log('🎤 Speaking automatically...');
                     
-                    // Debug: Check if speech is actually queued
+                    // Monitor speech status
                     setTimeout(() => {
-                        console.log('📊 Speech status check:');
-                        console.log('  - Speaking:', speechSynthesis.speaking);
-                        console.log('  - Pending:', speechSynthesis.pending);
-                        console.log('  - Paused:', speechSynthesis.paused);
-                        
                         if (!speechSynthesis.speaking && !speechSynthesis.pending) {
-                            console.log('⚠️ Speech not started! Trying again...');
-                            // Try one more time
+                            console.log('⚠️ Speech not started, retrying...');
                             speechSynthesis.cancel();
                             setTimeout(() => {
                                 speechSynthesis.speak(utterance);
@@ -3122,10 +3113,9 @@
                     if (speakingIndicator) {
                         speakingIndicator.style.display = 'none';
                     }
-                    showStatus('ไม่สามารถอ่านเสียงได้: ' + error.message, 'error');
                 }
                 
-            }, 250); // Wait 250ms after cancel
+            }, 100);
         }
         
         // Stop Speaking
@@ -3146,5 +3136,5 @@
         loadBooksFromFirebase();
         loadNewsFromFirebase();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99add9eb54ba55a1',t:'MTc2MjUyOTIxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adec66b39255a1',t:'MTc2MjUyOTk2Ny4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
