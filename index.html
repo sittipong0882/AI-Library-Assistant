@@ -1052,13 +1052,24 @@
             margin-bottom: 25px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
             position: relative;
-            overflow: hidden;
         }
         
         .news-slider h3 {
             color: #667eea;
             margin: 0 0 15px 0;
             font-size: 18px;
+        }
+        
+        .news-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .news-grid {
+                grid-template-columns: 1fr;
+            }
         }
         
         .news-slide {
@@ -1075,24 +1086,65 @@
             to { opacity: 1; }
         }
         
+        .news-card-item {
+            background: #f8f9ff;
+            border-radius: 12px;
+            padding: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            border: 2px solid #e8ebff;
+        }
+        
+        .news-card-item:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+        }
+        
         .news-image {
             width: 100%;
-            height: 200px;
-            object-fit: cover;
+            height: auto;
+            max-height: 200px;
+            object-fit: contain;
             border-radius: 8px;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+            background: white;
+        }
+        
+        @media (max-width: 768px) {
+            .news-image {
+                max-height: 200px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .news-image {
+                max-height: 150px;
+            }
+        }
+        
+        .news-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 8px;
         }
         
         .news-content {
             color: #333;
             line-height: 1.6;
+            font-size: 14px;
         }
         
         .news-indicators {
-            display: flex;
+            display: none;
             justify-content: center;
             gap: 8px;
             margin-top: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .news-indicators {
+                display: flex;
+            }
         }
         
         .news-indicator {
@@ -1225,9 +1277,26 @@
         🤖
        </div>
        <div class="ai-message-content">
-        สวัสดีค่ะ! ฉันคือ AI ผู้ช่วยค้นหาหนังสือ 📚<br>
-         คุณสามารถพูดคุยกับฉันเพื่อค้นหาหนังสือที่ต้องการได้เลยค่ะ<br>
-         ลองถามฉันว่า "มีหนังสือเกี่ยวกับ AI ไหม" หรือ "แนะนำหนังสือด้านสุขภาพหน่อย"
+        สวัสดีค่ะ! ฉันคือ AI ผู้ช่วยค้นหาหนังสือ 📚<br><br>
+         คุณสามารถพูดคุยกับฉันได้อย่างอิสระเลยค่ะ ไม่ว่าจะเป็น:<br><br>
+         💬 <strong>ถามแบบง่ายๆ:</strong><br>
+         • "มีหนังสือเกี่ยวกับ AI ไหม"<br>
+         • "หนังสือด้านสุขภาพมีอะไรบ้าง"<br>
+         • "Python"<br>
+         • "หนังสือหมวดการตลาด"<br><br>
+         💬 <strong>ถามแบบละเอียด:</strong><br>
+         • "ฉันต้องการหาหนังสือเกี่ยวกับการเขียนโปรแกรมและปัญญาประดิษฐ์"<br>
+         • "ช่วยหาหนังสือเกี่ยวกับการบริหารจัดการธุรกิจหน่อย"<br>
+         • "อยากอ่านหนังสือด้านการตลาดและการขาย"<br>
+         • "ขอข้อมูลหนังสือเกี่ยวกับการเงินและบัญชี"<br><br>
+         💬 <strong>ถามแบบสบายๆ:</strong><br>
+         • "หาหนังสือเกี่ยวกับจิตวิทยา"<br><br>
+         💬 <strong>ถามแบบเฉพาะเจาะจง:</strong><br>
+         • "หนังสือของผู้แต่ง..."<br>
+         • "ค้นหาหนังสือชื่อ..."<br>
+         • "หนังสือที่พูดถึงเรื่อง..."<br>
+         • "มีหนังสือแนวนิยายไหม"<br><br>
+         ถามอะไรก็ได้เลยค่ะ ฉันพร้อมช่วยเสมอ! 😊
        </div>
       </div>
      </div>
@@ -1676,25 +1745,65 @@
             slidesContainer.innerHTML = '';
             indicatorsContainer.innerHTML = '';
             
-            visibleNews.forEach((news, index) => {
-                const slide = document.createElement('div');
-                slide.className = `news-slide ${index === 0 ? 'active' : ''}`;
-                slide.innerHTML = `
-                    <img src="${news.imageUrl}" alt="${news.title}" class="news-image" onerror="this.src=''; this.alt='รูปภาพไม่สามารถโหลดได้'; this.style.display='none';">
-                    <h4 style="color: #667eea; margin: 0 0 10px 0;">${news.title}</h4>
-                    <div class="news-content">${news.content}</div>
-                `;
-                slidesContainer.appendChild(slide);
-                
-                const indicator = document.createElement('div');
-                indicator.className = `news-indicator ${index === 0 ? 'active' : ''}`;
-                indicator.addEventListener('click', () => showSlide(index));
-                indicatorsContainer.appendChild(indicator);
-            });
+            // Check if mobile
+            const isMobile = window.innerWidth <= 768;
             
-            currentSlideIndex = 0;
-            startNewsSlider();
+            if (isMobile) {
+                // Mobile: Slider mode (1 news at a time)
+                visibleNews.forEach((news, index) => {
+                    const slide = document.createElement('div');
+                    slide.className = `news-slide ${index === 0 ? 'active' : ''}`;
+                    slide.innerHTML = `
+                        <div class="news-card-item">
+                            <img src="${news.imageUrl}" alt="${news.title}" class="news-image" onerror="this.src=''; this.alt='รูปภาพไม่สามารถโหลดได้'; this.style.display='none';">
+                            <div class="news-title">${news.title}</div>
+                            <div class="news-content">${news.content}</div>
+                        </div>
+                    `;
+                    slidesContainer.appendChild(slide);
+                    
+                    const indicator = document.createElement('div');
+                    indicator.className = `news-indicator ${index === 0 ? 'active' : ''}`;
+                    indicator.addEventListener('click', () => showSlide(index));
+                    indicatorsContainer.appendChild(indicator);
+                });
+                
+                currentSlideIndex = 0;
+                startNewsSlider();
+            } else {
+                // Desktop: Grid mode (3 columns, all news visible, no slider)
+                const newsGrid = document.createElement('div');
+                newsGrid.className = 'news-grid';
+                
+                visibleNews.forEach((news) => {
+                    const newsCard = document.createElement('div');
+                    newsCard.className = 'news-card-item';
+                    newsCard.innerHTML = `
+                        <img src="${news.imageUrl}" alt="${news.title}" class="news-image" onerror="this.src=''; this.alt='รูปภาพไม่สามารถโหลดได้'; this.style.display='none';">
+                        <div class="news-title">${news.title}</div>
+                        <div class="news-content">${news.content}</div>
+                    `;
+                    newsGrid.appendChild(newsCard);
+                });
+                
+                slidesContainer.appendChild(newsGrid);
+                
+                // Stop slider on desktop
+                if (newsSliderInterval) {
+                    clearInterval(newsSliderInterval);
+                    newsSliderInterval = null;
+                }
+            }
         }
+        
+        // Handle window resize to switch between mobile and desktop modes
+        let resizeTimeout;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                loadNewsSlider();
+            }, 250);
+        });
         
         // Start news slider
         function startNewsSlider() {
@@ -2034,30 +2143,17 @@
             }
             
             results.forEach(book => {
-                const available = book.available;
-                
-                let availabilityClass = 'unavailable';
-                let availabilityText = 'ไม่มีให้ยืม';
-                
-                if (available > 5) {
-                    availabilityClass = 'available';
-                    availabilityText = `มีให้ยืม ${available} เล่ม`;
-                } else if (available > 0) {
-                    availabilityClass = 'limited';
-                    availabilityText = `เหลือ ${available} เล่ม`;
-                }
-                
                 const bookCard = document.createElement('div');
-                bookCard.className = 'book-card';
+                bookCard.className = 'ai-book-result';
+                bookCard.style.marginBottom = '15px';
                 bookCard.innerHTML = `
-                    <div class="book-call-number">เลขเรียกหนังสือ: ${book.callNumber}</div>
-                    <div class="book-title">${book.title}</div>
-                    <div class="book-info">
-                        <div class="book-info-item"><strong>ผู้แต่ง:</strong> ${book.author}</div>
-                        <div class="book-info-item"><strong>หมวด:</strong> ${book.category}</div>
-                        ${book.abstract ? `<div class="book-info-item"><strong>บทคัดย่อ:</strong> ${book.abstract}</div>` : ''}
+                    <div class="ai-book-title">📖 ${book.title}</div>
+                    <div class="ai-book-info">👤 ผู้แต่ง: ${book.author}</div>
+                    <div class="ai-book-info">📚 หมวด: ${book.category}</div>
+                    <div class="ai-book-info">📍 เลขเรียกหนังสือ: ${book.callNumber}</div>
+                    <div class="ai-book-info" style="color: ${book.available > 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                        ${book.available > 0 ? `✅ มีให้ยืม ${book.available} เล่ม` : '❌ ไม่มีให้ยืม'}
                     </div>
-                    <span class="book-availability ${availabilityClass}">${availabilityText}</span>
                 `;
                 resultsContainer.appendChild(bookCard);
             });
@@ -2680,7 +2776,7 @@
             userMsg.className = 'user-message';
             userMsg.innerHTML = `
                 <div class="user-avatar">👤</div>
-                <div class="user-message-content">${message}</div>
+                <div class="user-message-content">${escapeHtml(message)}</div>
             `;
             messagesContainer.appendChild(userMsg);
             
@@ -2704,35 +2800,73 @@
             
             // Process AI response
             setTimeout(() => {
-                const response = processAiQuery(message);
-                typingIndicator.remove();
-                
-                const aiMsg = document.createElement('div');
-                aiMsg.className = 'ai-message';
-                aiMsg.innerHTML = `
-                    <div class="ai-avatar">🤖</div>
-                    <div class="ai-message-content">
-                        ${response.text}
-                        ${response.books.length > 0 ? response.books.map(book => `
-                            <div class="ai-book-result">
-                                <div class="ai-book-title">📖 ${book.title}</div>
-                                <div class="ai-book-info">👤 ผู้แต่ง: ${book.author}</div>
-                                <div class="ai-book-info">📚 หมวด: ${book.category}</div>
-                                <div class="ai-book-info">📍 เลขเรียก: ${book.callNumber}</div>
-                                <div class="ai-book-info" style="color: ${book.available > 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
-                                    ${book.available > 0 ? `✅ มีให้ยืม ${book.available} เล่ม` : '❌ ไม่มีให้ยืม'}
+                let response;
+                try {
+                    response = processAiQuery(message);
+                    
+                    if (!response || typeof response !== 'object') {
+                        throw new Error('Invalid response from processAiQuery');
+                    }
+                    
+                    typingIndicator.remove();
+                    
+                    const aiMsg = document.createElement('div');
+                    aiMsg.className = 'ai-message';
+                    aiMsg.innerHTML = `
+                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-message-content">
+                            ${response.text || 'ขอโทษค่ะ ไม่สามารถประมวลผลได้'}
+                            ${response.books && response.books.length > 0 ? response.books.map(book => `
+                                <div class="ai-book-result">
+                                    <div class="ai-book-title">📖 ${escapeHtml(book.title || '')}</div>
+                                    <div class="ai-book-info">👤 ผู้แต่ง: ${escapeHtml(book.author || '')}</div>
+                                    <div class="ai-book-info">📚 หมวด: ${escapeHtml(book.category || '')}</div>
+                                    <div class="ai-book-info">📍 เลขเรียก: ${escapeHtml(book.callNumber || '')}</div>
+                                    <div class="ai-book-info" style="color: ${book.available > 0 ? '#27ae60' : '#e74c3c'}; font-weight: 600;">
+                                        ${book.available > 0 ? `✅ มีให้ยืม ${book.available} เล่ม` : '❌ ไม่มีให้ยืม'}
+                                    </div>
                                 </div>
-                            </div>
-                        `).join('') : ''}
-                        <div class="ai-speaking" id="speaking-indicator" style="display: none;">🔊 กำลังอ่านผลลัพธ์...</div>
-                    </div>
-                `;
-                messagesContainer.appendChild(aiMsg);
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
-                
-                // Speak the response (with improved mobile support)
-                speakText(response.speechText);
+                            `).join('') : ''}
+                            <div class="ai-speaking" id="speaking-indicator" style="display: none;">🔊 กำลังอ่านผลลัพธ์...</div>
+                        </div>
+                    `;
+                    messagesContainer.appendChild(aiMsg);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    
+                    // Speak the response (with improved mobile support)
+                    if (response.speechText) {
+                        speakText(response.speechText);
+                    }
+                    
+                    // Log search
+                    logSearch(message, response.books ? response.books.length : 0, 'ai_chat');
+                } catch (error) {
+                    console.error('AI Error:', error);
+                    console.error('Error details:', error.message, error.stack);
+                    
+                    typingIndicator.remove();
+                    
+                    const errorMsg = document.createElement('div');
+                    errorMsg.className = 'ai-message';
+                    errorMsg.innerHTML = `
+                        <div class="ai-avatar">🤖</div>
+                        <div class="ai-message-content">
+                            ขอโทษค่ะ เกิดข้อผิดพลาดในการประมวลผล<br>
+                            <small style="color: #999;">ข้อผิดพลาด: ${escapeHtml(error.message || 'ไม่ทราบสาเหตุ')}</small><br>
+                            กรุณาลองใหม่อีกครั้งค่ะ 🙏
+                        </div>
+                    `;
+                    messagesContainer.appendChild(errorMsg);
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
             }, 1000);
+        }
+        
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
         }
         
         // Process AI Query with Smart Understanding
@@ -2819,23 +2953,38 @@
             return processedText;
         }
         
+        // Escape special regex characters
+        function escapeRegex(str) {
+            return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+        
         // Extract smart keywords from query
         function extractSmartKeywords(query) {
-            // Remove common words
+            // Remove common words (expanded list)
             const stopWords = ['มี', 'หนังสือ', 'เกี่ยวกับ', 'เกี่ยว', 'กับ', 'ไหม', 'บ้าง', 'ครับ', 'ค่ะ', 
                               'อยาก', 'หา', 'ค้นหา', 'แนะนำ', 'สนใจ', 'อ่าน', 'ยืม', 'ดู', 'เล่ม', 'ใน', 'ของ', 
-                              'ที่', 'จะ', 'ได้', 'ไหน', 'อะไร', 'ช่วย', 'หน่อย', 'ให้', 'ฉัน', 'ผม', 'ดิฉัน'];
+                              'ที่', 'จะ', 'ได้', 'ไหน', 'อะไร', 'ช่วย', 'หน่อย', 'ให้', 'ฉัน', 'ผม', 'ดิฉัน',
+                              'ต้องการ', 'และ', 'หรือ', 'เรื่อง', 'ด้าน', 'ทาง', 'about', 'on', 'the', 'a', 'an',
+                              'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does',
+                              'did', 'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must',
+                              'ขอ', 'ข้อมูล', 'ชื่อ', 'แนว', 'พูดถึง', 'หมวด','และ', 'หมวดหมู่', 'รายชื่อ', 
+                              'รู้', 'ว่า', 'แต่ง', 'โดย', 'ผู้เขียน', 'คือ', 'ผู้แต่ง'];
             
             // Known keywords that should be extracted (in lowercase)
             const knownKeywords = [
                 'machine learning', 'deep learning', 'data science', 'artificial intelligence',
-                'ai', 'python', 'java', 'javascript', 'php', 'sql', 'html', 'css',
-                'โปรแกรม', 'บริหาร', 'การจัดการ', 'สุขภาพ', 'ธุรกิจ', 'การตลาด',
-                'คอมพิวเตอร์', 'วิทยาศาสตร์', 'คณิตศาสตร์', 'ภาษา', 'อังกฤษ',
-                'ประวัติศาสตร์', 'จิตวิทยา', 'ศิลปะ', 'กฎหมาย', 'การเงิน',
-                'ปัญญาประดิษฐ์', 'management', 'business', 'marketing', 'finance', 'health',
-                'programming', 'coding', 'software', 'computer', 'science',
-                'mathematics', 'english', 'history', 'psychology', 'art', 'law'
+                'ai', 'python', 'java', 'javascript', 'php', 'sql', 'html', 'css', 'c++', 'c#',
+                'โปรแกรม', 'บริหาร', 'การจัดการ', 'สุขภาพ', 'ธุรกิจ', 'การตลาด', 'การขาย',
+                'คอมพิวเตอร์', 'วิทยาศาสตร์', 'คณิตศาสตร์', 'ภาษา', 'อังกฤษ', 'ไทย',
+                'ประวัติศาสตร์', 'จิตวิทยา', 'ศิลปะ', 'กฎหมาย', 'การเงิน', 'บัญชี',
+                'ปัญญาประดิษฐ์', 'เขียนโปรแกรม', 'พัฒนา', 'ออกแบบ', 'สถาปัตยกรรม',
+                'management', 'business', 'marketing', 'finance', 'health', 'sales',
+                'programming', 'coding', 'software', 'computer', 'science', 'development',
+                'mathematics', 'english', 'history', 'psychology', 'art', 'law', 'accounting',
+                'economics', 'เศรษฐศาสตร์', 'สังคม', 'การศึกษา', 'ครู', 'อาจารย์',
+                'วิศวกรรม', 'engineering', 'architecture', 'design', 'ออกกำลังกาย',
+                'โภชนาการ', 'nutrition', 'fitness', 'exercise', 'แพทย์', 'medical',
+                'พยาบาล', 'nursing', 'เภสัช', 'pharmacy', 'ทันตแพทย์', 'dental'
             ];
             
             // Sort keywords by length (longest first) for better matching
@@ -2844,13 +2993,20 @@
             // STEP 1: Pre-process query to separate stuck words after common phrases
             let processedQuery = query;
             
-            // Common phrases that often have words stuck to them
-            const commonPhrases = ['เกี่ยวกับ', 'เกี่ยว', 'เรื่อง', 'ด้าน', 'ทาง', 'about', 'on'];
+            // Common phrases that often have words stuck to them (expanded)
+            const commonPhrases = [
+                'เกี่ยวกับ', 'เกี่ยว', 'เรื่อง', 'ด้าน', 'ทาง','และ', 'about', 'on',
+                'หาหนังสือ', 'อยากอ่าน', 'ขอข้อมูล', 'ค้นหา', 'หนังสือของ',
+                'มีหนังสือแนว', 'แนะนำหนังสือ', 'พูดถึง', 'ช่วยหา', 'อยากได้',
+                'หนังสือหมวด', 'มีหนังสือหมวดหมู่', 'ขอรายชื่อ', 'อยากรู้ว่า',
+                'แต่งโดย', 'ผู้เขียนคือ', 'มีหนังสือเรื่อง'
+            ];
             
             commonPhrases.forEach(phrase => {
                 // Find pattern: phrase + any word (no space)
                 // Match phrase followed by Thai/English characters without space
-                const stuckPattern = new RegExp(`(${phrase})([ก-๙a-zA-Z]+)`, 'gi');
+                const escapedPhrase = escapeRegex(phrase);
+                const stuckPattern = new RegExp(`(${escapedPhrase})([ก-๙a-zA-Z]+)`, 'gi');
                 processedQuery = processedQuery.replace(stuckPattern, '$1 $2');
             });
             
@@ -2859,7 +3015,8 @@
             let remainingQuery = processedQuery;
             
             sortedKeywords.forEach(keyword => {
-                const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+                const escapedKeyword = escapeRegex(keyword);
+                const regex = new RegExp(`\\b${escapedKeyword}\\b`, 'gi');
                 const matches = remainingQuery.match(regex);
                 if (matches) {
                     extractedKeywords.push(keyword);
@@ -2884,34 +3041,83 @@
             const synonyms = {
                 'ai': ['ปัญญาประดิษฐ์', 'artificial intelligence', 'machine learning', 'deep learning', 'ai', 'เอไอ'],
                 'ปัญญาประดิษฐ์': ['ai', 'artificial intelligence', 'machine learning', 'deep learning', 'เอไอ'],
-                'บริหาร': ['การจัดการ', 'management', 'ผู้นำ', 'leadership', 'บริหารจัดการ', 'ธุรกิจ'],
-                'การจัดการ': ['บริหาร', 'management', 'ผู้นำ', 'leadership', 'บริหารจัดการ'],
-                'สุขภาพ': ['สุขภาพ', 'health', 'แพทย์', 'การแพทย์', 'โภชนาการ', 'ออกกำลังกาย'],
-                'โปรแกรม': ['programming', 'coding', 'โค้ด', 'เขียนโปรแกรม', 'software', 'พัฒนา'],
-                'programming': ['โปรแกรม', 'coding', 'โค้ด', 'เขียนโปรแกรม', 'software'],
-                'python': ['python', 'ไพธอน', 'โปรแกรม', 'programming'],
-                'ธุรกิจ': ['business', 'การค้า', 'บริหาร', 'การจัดการ', 'เศรษฐศาสตร์'],
-                'business': ['ธุรกิจ', 'การค้า', 'บริหาร', 'การจัดการ'],
-                'การตลาด': ['marketing', 'ขาย', 'โฆษณา', 'ธุรกิจ'],
-                'marketing': ['การตลาด', 'ขาย', 'โฆษณา'],
-                'คอมพิวเตอร์': ['computer', 'it', 'เทคโนโลยี', 'โปรแกรม'],
-                'computer': ['คอมพิวเตอร์', 'it', 'เทคโนโลยี'],
-                'วิทยาศาสตร์': ['science', 'ฟิสิกส์', 'เคมี', 'ชีววิทยา'],
-                'science': ['วิทยาศาสตร์', 'ฟิสิกส์', 'เคมี'],
-                'คณิตศาสตร์': ['math', 'mathematics', 'เลข', 'สถิติ'],
-                'math': ['คณิตศาสตร์', 'mathematics', 'เลข'],
-                'ภาษา': ['language', 'อังกฤษ', 'english', 'ไทย'],
+                'บริหาร': ['การจัดการ', 'management', 'ผู้นำ', 'leadership', 'บริหารจัดการ', 'ธุรกิจ', 'องค์กร'],
+                'การจัดการ': ['บริหาร', 'management', 'ผู้นำ', 'leadership', 'บริหารจัดการ', 'องค์กร'],
+                'สุขภาพ': ['health', 'แพทย์', 'การแพทย์', 'โภชนาการ', 'ออกกำลังกาย', 'พยาบาล', 'เภสัช'],
+                'health': ['สุขภาพ', 'แพทย์', 'การแพทย์', 'โภชนาการ', 'ออกกำลังกาย'],
+                'โปรแกรม': ['programming', 'coding', 'โค้ด', 'เขียนโปรแกรม', 'software', 'พัฒนา', 'คอมพิวเตอร์'],
+                'programming': ['โปรแกรม', 'coding', 'โค้ด', 'เขียนโปรแกรม', 'software', 'พัฒนา'],
+                'เขียนโปรแกรม': ['programming', 'coding', 'โปรแกรม', 'software', 'พัฒนา'],
+                'python': ['python', 'ไพธอน', 'โปรแกรม', 'programming', 'coding'],
+                'java': ['java', 'จาวา', 'โปรแกรม', 'programming'],
+                'javascript': ['javascript', 'js', 'โปรแกรม', 'web'],
+                'ธุรกิจ': ['business', 'การค้า', 'บริหาร', 'การจัดการ', 'เศรษฐศาสตร์', 'การตลาด'],
+                'business': ['ธุรกิจ', 'การค้า', 'บริหาร', 'การจัดการ', 'การตลาด'],
+                'การตลาด': ['marketing', 'ขาย', 'โฆษณา', 'ธุรกิจ', 'การขาย', 'ส่งเสริมการขาย'],
+                'marketing': ['การตลาด', 'ขาย', 'โฆษณา', 'การขาย'],
+                'การขาย': ['sales', 'ขาย', 'การตลาด', 'marketing', 'ธุรกิจ'],
+                'sales': ['การขาย', 'ขาย', 'การตลาด'],
+                'คอมพิวเตอร์': ['computer', 'it', 'เทคโนโลยี', 'โปรแกรม', 'software', 'hardware'],
+                'computer': ['คอมพิวเตอร์', 'it', 'เทคโนโลยี', 'โปรแกรม'],
+                'วิทยาศาสตร์': ['science', 'ฟิสิกส์', 'เคมี', 'ชีววิทยา', 'วิทยาศาสตร์'],
+                'science': ['วิทยาศาสตร์', 'ฟิสิกส์', 'เคมี', 'ชีววิทยา'],
+                'คณิตศาสตร์': ['math', 'mathematics', 'เลข', 'สถิติ', 'พีชคณิต'],
+                'math': ['คณิตศาสตร์', 'mathematics', 'เลข', 'สถิติ'],
+                'mathematics': ['คณิตศาสตร์', 'math', 'เลข', 'สถิติ'],
+                'ภาษา': ['language', 'อังกฤษ', 'english', 'ไทย', 'ภาษาต่างประเทศ'],
+                'อังกฤษ': ['english', 'ภาษา', 'ภาษาอังกฤษ'],
                 'english': ['ภาษา', 'อังกฤษ', 'ภาษาอังกฤษ'],
-                'ประวัติศาสตร์': ['history', 'อดีต', 'เหตุการณ์'],
-                'history': ['ประวัติศาสตร์', 'อดีต'],
-                'จิตวิทยา': ['psychology', 'จิตใจ', 'พฤติกรรม'],
-                'psychology': ['จิตวิทยา', 'จิตใจ'],
-                'ศิลปะ': ['art', 'ดนตรี', 'จิตรกรรม', 'ประติมากรรม'],
-                'art': ['ศิลปะ', 'ดนตรี', 'จิตรกรรม'],
-                'กฎหมาย': ['law', 'legal', 'นิติศาสตร์'],
+                'ประวัติศาสตร์': ['history', 'อดีต', 'เหตุการณ์', 'ประวัติ'],
+                'history': ['ประวัติศาสตร์', 'อดีต', 'เหตุการณ์'],
+                'จิตวิทยา': ['psychology', 'จิตใจ', 'พฤติกรรม', 'จิตวิทยา'],
+                'psychology': ['จิตวิทยา', 'จิตใจ', 'พฤติกรรม'],
+                'ศิลปะ': ['art', 'ดนตรี', 'จิตรกรรม', 'ประติมากรรม', 'ศิลป์'],
+                'art': ['ศิลปะ', 'ดนตรี', 'จิตรกรรม', 'ศิลป์'],
+                'กฎหมาย': ['law', 'legal', 'นิติศาสตร์', 'กฎ', 'ระเบียบ'],
                 'law': ['กฎหมาย', 'legal', 'นิติศาสตร์'],
-                'การเงิน': ['finance', 'เงิน', 'บัญชี', 'ธนาคาร'],
-                'finance': ['การเงิน', 'เงิน', 'บัญชี']
+                'การเงิน': ['finance', 'เงิน', 'บัญชี', 'ธนาคาร', 'การลงทุน'],
+                'finance': ['การเงิน', 'เงิน', 'บัญชี', 'การลงทุน'],
+                'บัญชี': ['accounting', 'การเงิน', 'บัญชี', 'finance'],
+                'accounting': ['บัญชี', 'การเงิน', 'finance'],
+                'เศรษฐศาสตร์': ['economics', 'เศรษฐกิจ', 'ธุรกิจ', 'การเงิน'],
+                'economics': ['เศรษฐศาสตร์', 'เศรษฐกิจ', 'ธุรกิจ'],
+                'การศึกษา': ['education', 'ครู', 'อาจารย์', 'สอน', 'เรียน'],
+                'education': ['การศึกษา', 'ครู', 'อาจารย์'],
+                'วิศวกรรม': ['engineering', 'วิศวกร', 'เทคนิค', 'เทคโนโลยี'],
+                'engineering': ['วิศวกรรม', 'วิศวกร', 'เทคนิค'],
+                'ออกแบบ': ['design', 'ดีไซน์', 'สร้างสรรค์', 'ศิลปะ'],
+                'design': ['ออกแบบ', 'ดีไซน์', 'สร้างสรรค์'],
+                'ออกกำลังกาย': ['exercise', 'fitness', 'กีฬา', 'สุขภาพ'],
+                'exercise': ['ออกกำลังกาย', 'fitness', 'กีฬา'],
+                'fitness': ['ออกกำลังกาย', 'exercise', 'สุขภาพ'],
+                'โภชนาการ': ['nutrition', 'อาหาร', 'สุขภาพ', 'โภชนศาสตร์'],
+                'nutrition': ['โภชนาการ', 'อาหาร', 'สุขภาพ'],
+                'นิยาย': ['novel', 'fiction', 'เรื่องสั้น', 'วรรณกรรม', 'ร้อยแก้ว'],
+                'novel': ['นิยาย', 'fiction', 'เรื่องสั้น', 'วรรณกรรม'],
+                'fiction': ['นิยาย', 'novel', 'เรื่องสั้น', 'วรรณกรรม'],
+                'วรรณกรรม': ['literature', 'นิยาย', 'บทกวี', 'ร้อยแก้ว', 'ร้อยกรอง'],
+                'literature': ['วรรณกรรม', 'นิยาย', 'บทกวี'],
+                'เทคโนโลยี': ['technology', 'tech', 'it', 'คอมพิวเตอร์', 'ดิจิทัล'],
+                'technology': ['เทคโนโลยี', 'tech', 'it', 'คอมพิวเตอร์'],
+                'tech': ['เทคโนโลยี', 'technology', 'it', 'คอมพิวเตอร์'],
+                'ดิจิทัล': ['digital', 'เทคโนโลยี', 'คอมพิวเตอร์', 'ออนไลน์'],
+                'digital': ['ดิจิทัล', 'เทคโนโลยี', 'คอมพิวเตอร์'],
+                'กีฬา': ['sport', 'sports', 'ออกกำลังกาย', 'ฟิตเนส', 'exercise'],
+                'sport': ['กีฬา', 'sports', 'ออกกำลังกาย', 'exercise'],
+                'sports': ['กีฬา', 'sport', 'ออกกำลังกาย'],
+                'ท่องเที่ยว': ['travel', 'tourism', 'เที่ยว', 'ท่องเที่ยว'],
+                'travel': ['ท่องเที่ยว', 'tourism', 'เที่ยว'],
+                'tourism': ['ท่องเที่ยว', 'travel', 'เที่ยว'],
+                'ศาสนา': ['religion', 'พุทธ', 'ธรรม', 'ศาสนศาสตร์'],
+                'religion': ['ศาสนา', 'พุทธ', 'ธรรม'],
+                'ปรัชญา': ['philosophy', 'ปรัชญา', 'ญาณวิทยา'],
+                'philosophy': ['ปรัชญา', 'ญาณวิทยา'],
+                'สิ่งแวดล้อม': ['environment', 'environmental', 'นิเวศ', 'ธรรมชาติ'],
+                'environment': ['สิ่งแวดล้อม', 'environmental', 'นิเวศ'],
+                'การสื่อสาร': ['communication', 'สื่อ', 'นิเทศศาสตร์', 'สื่อสาร'],
+                'communication': ['การสื่อสาร', 'สื่อ', 'นิเทศศาสตร์'],
+                'สื่อ': ['media', 'communication', 'การสื่อสาร', 'นิเทศศาสตร์'],
+                'media': ['สื่อ', 'communication', 'การสื่อสาร']
             };
             
             // Expand keywords with synonyms
@@ -3171,5 +3377,5 @@
         loadBooksFromFirebase();
         loadNewsFromFirebase();
     </script>
- <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99adf7f3c4d055a1',t:'MTc2MjUzMDQ0MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+ <script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'99ae2cfe742c55a1',t:'MTc2MjUzMjYxMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
