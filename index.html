@@ -2993,6 +2993,100 @@
             document.getElementById('edit-book-form').reset();
         }
 
+        // ✅ กล่องยืนยันแบบสวยงาม
+        function showConfirm(message, callback) {
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = 0;
+            overlay.style.left = 0;
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0,0,0,0.4)';
+            overlay.style.display = 'flex';
+            overlay.style.alignItems = 'center';
+            overlay.style.justifyContent = 'center';
+            overlay.style.zIndex = 2000;
+            overlay.style.animation = 'fadeIn 0.2s ease';
+
+            const box = document.createElement('div');
+            box.style.backgroundColor = '#fff';
+            box.style.padding = '25px';
+            box.style.borderRadius = '12px';
+            box.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            box.style.textAlign = 'center';
+            box.style.minWidth = '320px';
+            box.style.border = '2px solid #2196F3';
+            box.innerHTML = `<p style="font-size: 18px; margin-bottom: 20px;">${message}</p>`;
+
+            const yesBtn = document.createElement('button');
+            yesBtn.innerText = 'ตกลง';
+            yesBtn.style.margin = '10px';
+            yesBtn.style.padding = '10px 25px';
+            yesBtn.style.backgroundColor = '#4CAF50';
+            yesBtn.style.color = 'white';
+            yesBtn.style.border = 'none';
+            yesBtn.style.borderRadius = '5px';
+            yesBtn.style.cursor = 'pointer';
+            yesBtn.style.fontSize = '16px';
+            yesBtn.onmouseover = () => yesBtn.style.backgroundColor = '#45a049';
+            yesBtn.onmouseout = () => yesBtn.style.backgroundColor = '#4CAF50';
+            yesBtn.onclick = () => {
+                document.body.removeChild(overlay);
+                callback(true);
+            };
+
+            const noBtn = document.createElement('button');
+            noBtn.innerText = 'ยกเลิก';
+            noBtn.style.margin = '10px';
+            noBtn.style.padding = '10px 25px';
+            noBtn.style.backgroundColor = '#f44336';
+            noBtn.style.color = 'white';
+            noBtn.style.border = 'none';
+            noBtn.style.borderRadius = '5px';
+            noBtn.style.cursor = 'pointer';
+            noBtn.style.fontSize = '16px';
+            noBtn.onmouseover = () => noBtn.style.backgroundColor = '#da190b';
+            noBtn.onmouseout = () => noBtn.style.backgroundColor = '#f44336';
+            noBtn.onclick = () => {
+                document.body.removeChild(overlay);
+                callback(false);
+            };
+
+            box.appendChild(yesBtn);
+            box.appendChild(noBtn);
+            overlay.appendChild(box);
+            document.body.appendChild(overlay);
+        }
+
+        // ✅ Toast แจ้งเตือนแบบสวย
+        function showToast(message, type = 'success') {
+            const toast = document.createElement('div');
+            toast.innerText = message;
+            toast.style.position = 'fixed';
+            toast.style.bottom = '30px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.color = 'white';
+            toast.style.padding = '14px 22px';
+            toast.style.borderRadius = '8px';
+            toast.style.fontSize = '16px';
+            toast.style.zIndex = 3000;
+            toast.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+            toast.style.opacity = '0';
+            toast.style.transition = 'opacity 0.4s ease';
+
+            // สีตามประเภท
+            toast.style.backgroundColor = type === 'error' ? '#e53935' : '#4CAF50';
+
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.opacity = '1'; }, 100);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 500);
+            }, 3000);
+        }
+
+        // ✅ บันทึกการแก้ไขหนังสือ
         async function saveEditBook(event) {
             event.preventDefault();
 
@@ -3010,25 +3104,28 @@
             try {
                 await db.collection('books').doc(id).update(updatedBook);
                 closeEditModal();
-                showAlert('books-alert', 'แก้ไขหนังสือสำเร็จ!', 'success');
+                showToast('📚 แก้ไขข้อมูลหนังสือสำเร็จ!', 'success');
             } catch (error) {
                 console.error('Error updating book:', error);
-                showAlert('books-alert', 'เกิดข้อผิดพลาดในการแก้ไขหนังสือ!', 'error');
+                showToast('❌ เกิดข้อผิดพลาดในการแก้ไขหนังสือ!', 'error');
             }
         }
 
-        // Delete Book
+        // ✅ ลบหนังสือ
         async function deleteBook(id) {
-            if (confirm('คุณต้องการลบหนังสือนี้หรือไม่?')) {
-                try {
-                    await db.collection('books').doc(id).delete();
-                    showAlert('books-alert', 'ลบหนังสือสำเร็จ!', 'success');
-                } catch (error) {
-                    console.error('Error deleting book:', error);
-                    showAlert('books-alert', 'เกิดข้อผิดพลาดในการลบหนังสือ!', 'error');
+            showConfirm('คุณต้องการลบหนังสือนี้หรือไม่?', async function (confirm) {
+                if (confirm) {
+                    try {
+                        await db.collection('books').doc(id).delete();
+                        showToast('🗑️ ลบหนังสือสำเร็จ!', 'success');
+                    } catch (error) {
+                        console.error('Error deleting book:', error);
+                        showToast('❌ เกิดข้อผิดพลาดในการลบหนังสือ!', 'error');
+                    }
                 }
-            }
+            });
         }
+
 
         // News Management
         async function addNews(event) {
@@ -3130,9 +3227,122 @@
                 console.error('Error toggling news visibility:', error);
             }
         }
-
         async function deleteNews(id) {
-            if (confirm('คุณต้องการลบข่าวนี้หรือไม่?')) {
+            // ฟังก์ชันยืนยันแบบกำหนดเอง
+            function customConfirm(message) {
+                return new Promise((resolve) => {
+                    const overlay = document.createElement('div');
+                    overlay.style.position = 'fixed';
+                    overlay.style.top = 0;
+                    overlay.style.left = 0;
+                    overlay.style.width = '100vw';
+                    overlay.style.height = '100vh';
+                    overlay.style.background = 'rgba(0,0,0,0.45)';
+                    overlay.style.display = 'flex';
+                    overlay.style.justifyContent = 'center';
+                    overlay.style.alignItems = 'center';
+                    overlay.style.zIndex = '9999';
+                    overlay.style.backdropFilter = 'blur(3px)';
+
+                    const box = document.createElement('div');
+                    box.style.background = '#fff';
+                    box.style.padding = '25px 30px';
+                    box.style.borderRadius = '15px';
+                    box.style.boxShadow = '0 4px 25px rgba(0,0,0,0.25)';
+                    box.style.textAlign = 'center';
+                    box.style.animation = 'fadeIn 0.25s ease';
+                    box.innerHTML = `
+                <h3 style="margin-bottom: 18px; font-size: 18px; color: #333;">${message}</h3>
+                <div style="display: flex; justify-content: center; gap: 15px;">
+                    <button id="yesBtn" style="
+                        background-color: #28a745;
+                        color: white;
+                        border: none;
+                        padding: 10px 22px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        transition: 0.2s;
+                    ">ตกลง</button>
+                    <button id="noBtn" style="
+                        background-color: #dc3545;
+                        color: white;
+                        border: none;
+                        padding: 10px 22px;
+                        border-radius: 8px;
+                        cursor: pointer;
+                        font-weight: bold;
+                        transition: 0.2s;
+                    ">ยกเลิก</button>
+                </div>
+            `;
+
+                    overlay.appendChild(box);
+                    document.body.appendChild(overlay);
+
+                    const yesBtn = box.querySelector('#yesBtn');
+                    const noBtn = box.querySelector('#noBtn');
+
+                    yesBtn.onmouseenter = () => yesBtn.style.transform = 'scale(1.05)';
+                    yesBtn.onmouseleave = () => yesBtn.style.transform = 'scale(1)';
+                    noBtn.onmouseenter = () => noBtn.style.transform = 'scale(1.05)';
+                    noBtn.onmouseleave = () => noBtn.style.transform = 'scale(1)';
+
+                    yesBtn.onclick = () => {
+                        overlay.remove();
+                        resolve(true);
+                    };
+                    noBtn.onclick = () => {
+                        overlay.remove();
+                        resolve(false);
+                    };
+                });
+            }
+
+            // ฟังก์ชันแจ้งเตือนสวย ๆ
+            function showAlert(containerId, message, type) {
+                const alert = document.createElement('div');
+                alert.textContent = message;
+                alert.style.position = 'fixed';
+                alert.style.top = '20px';
+                alert.style.right = '20px';
+                alert.style.padding = '12px 18px';
+                alert.style.borderRadius = '10px';
+                alert.style.color = '#fff';
+                alert.style.fontWeight = 'bold';
+                alert.style.boxShadow = '0 3px 15px rgba(0,0,0,0.2)';
+                alert.style.zIndex = '10000';
+                alert.style.opacity = '0';
+                alert.style.transition = 'opacity 0.3s ease';
+                alert.style.fontSize = '15px';
+
+                if (type === 'success') {
+                    alert.style.background = '#28a745';
+                } else {
+                    alert.style.background = '#dc3545';
+                }
+
+                document.body.appendChild(alert);
+                setTimeout(() => { alert.style.opacity = '1'; }, 50);
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    setTimeout(() => alert.remove(), 500);
+                }, 3000);
+            }
+
+            // เอฟเฟกต์ Fade in
+            const style = document.createElement('style');
+            style.textContent = `
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+    `;
+            document.head.appendChild(style);
+
+            // ยืนยันก่อนลบ
+            const confirmed = await customConfirm('คุณต้องการลบข่าวนี้หรือไม่?');
+            if (confirmed) {
                 try {
                     await db.collection('news').doc(id).delete();
                     showAlert('news-alert', 'ลบข่าวสำเร็จ!', 'success');
@@ -3346,9 +3556,112 @@
             }
         }
 
-        // Delete Student
+        async function customConfirm(message) {
+            return new Promise((resolve) => {
+                // สร้างพื้นหลังเบลอ
+                const overlay = document.createElement('div');
+                overlay.style.position = 'fixed';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.width = '100vw';
+                overlay.style.height = '100vh';
+                overlay.style.background = 'rgba(0,0,0,0.4)';
+                overlay.style.display = 'flex';
+                overlay.style.justifyContent = 'center';
+                overlay.style.alignItems = 'center';
+                overlay.style.zIndex = '9999';
+                overlay.style.backdropFilter = 'blur(3px)';
+
+                // กล่องยืนยัน
+                const box = document.createElement('div');
+                box.style.background = '#fff';
+                box.style.padding = '25px 30px';
+                box.style.borderRadius = '15px';
+                box.style.boxShadow = '0 4px 25px rgba(0,0,0,0.25)';
+                box.style.textAlign = 'center';
+                box.style.animation = 'fadeIn 0.25s ease';
+                box.innerHTML = `
+            <h3 style="margin-bottom: 18px; font-size: 18px; color: #333;">${message}</h3>
+            <div style="display: flex; justify-content: center; gap: 15px;">
+                <button id="yesBtn" style="
+                    background-color: #28a745;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: 0.2s;
+                ">ตกลง</button>
+                <button id="noBtn" style="
+                    background-color: #dc3545;
+                    color: white;
+                    border: none;
+                    padding: 10px 20px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-weight: bold;
+                    transition: 0.2s;
+                ">ยกเลิก</button>
+            </div>
+        `;
+
+                overlay.appendChild(box);
+                document.body.appendChild(overlay);
+
+                // เอฟเฟกต์ hover
+                const yesBtn = box.querySelector('#yesBtn');
+                const noBtn = box.querySelector('#noBtn');
+                yesBtn.onmouseenter = () => yesBtn.style.transform = 'scale(1.05)';
+                yesBtn.onmouseleave = () => yesBtn.style.transform = 'scale(1)';
+                noBtn.onmouseenter = () => noBtn.style.transform = 'scale(1.05)';
+                noBtn.onmouseleave = () => noBtn.style.transform = 'scale(1)';
+
+                yesBtn.onclick = () => {
+                    overlay.remove();
+                    resolve(true);
+                };
+                noBtn.onclick = () => {
+                    overlay.remove();
+                    resolve(false);
+                };
+            });
+        }
+
+        // ✅ ฟังก์ชันแจ้งเตือนมุมขวาบน
+        function showAlert(containerId, message, type) {
+            const alert = document.createElement('div');
+            alert.textContent = message;
+            alert.style.position = 'fixed';
+            alert.style.top = '20px';
+            alert.style.right = '20px';
+            alert.style.padding = '12px 18px';
+            alert.style.borderRadius = '10px';
+            alert.style.color = '#fff';
+            alert.style.fontWeight = 'bold';
+            alert.style.boxShadow = '0 3px 15px rgba(0,0,0,0.2)';
+            alert.style.zIndex = '10000';
+            alert.style.opacity = '0';
+            alert.style.transition = 'opacity 0.3s ease';
+
+            if (type === 'success') {
+                alert.style.background = '#28a745';
+            } else {
+                alert.style.background = '#dc3545';
+            }
+
+            document.body.appendChild(alert);
+            setTimeout(() => { alert.style.opacity = '1'; }, 50);
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 500);
+            }, 3000);
+        }
+
+        // ✅ Delete Student (ตกแต่งแล้ว)
         async function deleteStudent(id) {
-            if (confirm('คุณต้องการลบนักศึกษานี้หรือไม่?')) {
+            const confirmed = await customConfirm('คุณต้องการลบนักศึกษานี้หรือไม่?');
+            if (confirmed) {
                 try {
                     await db.collection('students').doc(id).delete();
                     showAlert('students-alert', 'ลบนักศึกษาสำเร็จ!', 'success');
@@ -3358,6 +3671,15 @@
                 }
             }
         }
+
+        // เอฟเฟกต์แอนิเมชันเล็กน้อย
+        const style = document.createElement('style');
+        style.textContent = `
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}`;
+        document.head.appendChild(style);
 
         // ==================== BORROW/RETURN MANAGEMENT ====================
 
