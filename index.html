@@ -384,12 +384,44 @@
                                     id="student-excel-upload" accept=".xlsx,.xls"
                                     onchange="handleStudentExcelUpload(event)" style="display: none;"> </label>
                         </div>
-                    </form><!-- Search Student -->
+                    </form>
+
+                    <!-- Search Student -->
+                    <!-- ในส่วนของ Search Student -->
                     <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 15px;">
-                        <h3 style="color: #667eea; margin-bottom: 15px;">🔍 ค้นหานักศึกษา</h3><input type="text"
-                            id="filter-student" class="form-control" placeholder="ค้นหาด้วยชื่อหรือรหัสนักศึกษา..."
-                            oninput="filterStudents()">
-                    </div><!-- Students Table -->
+                        <h3 style="color: #667eea; margin-bottom: 15px;">🔍 ค้นหาและจัดเรียงนักศึกษา</h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;">
+                            <input type="text" id="filter-student" class="form-control"
+                                placeholder="ค้นหาด้วยชื่อหรือรหัสนักศึกษา..." oninput="filterStudents()">
+                            <select id="filter-student-department" class="form-control" onchange="filterStudents()">
+                                <option value="">ทุกแผนก</option>
+                                <option value="เทคโนโลยีคอมพิวเตอร์">เทคโนโลยีคอมพิวเตอร์</option>
+                                <option value="อิเล็กทรอนิกส์">อิเล็กทรอนิกส์</option>
+                                <option value="ไฟฟ้า">ไฟฟ้า</option>
+                                <option value="ช่างยนต์">ช่างยนต์</option>
+                                <option value="ก่อสร้าง">ก่อสร้าง</option>
+                                <option value="บัญชี">บัญชี</option>
+                                <option value="การตลาด">การตลาด</option>
+                                <option value="การโรงแรม">การโรงแรม</option>
+                                <option value="คอมพิวเตอร์ธุรกิจดิจิทัล">คอมพิวเตอร์ธุรกิจดิจิทัล</option>
+                                <option value="ช่างกลโรงงาน">ช่างกลโรงงาน</option>
+                                <option value="เทคนิคอุตสาหกรรม">เทคนิคอุตสาหกรรม</option>
+                                <option value="อื่นๆ">อื่นๆ</option>
+                            </select>
+                            <select id="sort-students" class="form-control" onchange="sortStudents()">
+                                <option value="id-asc">เรียงตามรหัสนักศึกษา (น้อย-มาก)</option>
+                                <option value="id-desc">เรียงตามรหัสนักศึกษา (มาก-น้อย)</option>
+                                <option value="name-asc">เรียงตามชื่อ (ก-ฮ)</option>
+                                <option value="name-desc">เรียงตามชื่อ (ฮ-ก)</option>
+                                <option value="department-asc">เรียงตามแผนก (ก-ฮ)</option>
+                                <option value="department-desc">เรียงตามแผนก (ฮ-ก)</option>
+                                <option value="date-desc">เรียงตามวันที่เพิ่ม (ใหม่-เก่า)</option>
+                                <option value="date-asc">เรียงตามวันที่เพิ่ม (เก่า-ใหม่)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Students Table -->
                     <div class="table-container">
                         <h3 style="margin-top: 30px; margin-bottom: 15px; color: #667eea;">รายชื่อนักศึกษาทั้งหมด</h3>
                         <table>
@@ -3819,17 +3851,126 @@
             }).join('');
         }
 
-        // Filter Students
+        // ฟังก์ชันกรองนักศึกษา
         function filterStudents() {
             const searchTerm = document.getElementById('filter-student').value.toLowerCase();
+            const department = document.getElementById('filter-student-department').value;
 
             filteredStudents = students.filter(student => {
-                return student.studentName.toLowerCase().includes(searchTerm) ||
-                    student.studentId.toLowerCase().includes(searchTerm);
+                const matchSearch = !searchTerm ||
+                    student.studentId.toLowerCase().includes(searchTerm) ||
+                    student.studentName.toLowerCase().includes(searchTerm);
+
+                const matchDepartment = !department || student.department === department;
+
+                return matchSearch && matchDepartment;
             });
+
+            // เรียงลำดับตามที่เลือกไว้
+            const sortBy = document.getElementById('sort-students').value;
+            sortStudentsList(filteredStudents, sortBy);
 
             renderStudents();
         }
+
+        // ฟังก์ชันเรียงลำดับนักศึกษา
+        function sortStudents() {
+            const sortBy = document.getElementById('sort-students').value;
+            sortStudentsList(filteredStudents, sortBy);
+            renderStudents();
+        }
+
+        // ฟังก์ชันเรียงลำดับ
+        function sortStudentsList(studentsList, sortBy) {
+            studentsList.sort((a, b) => {
+                switch (sortBy) {
+                    case 'id-asc':
+                        return a.studentId.localeCompare(b.studentId);
+                    case 'id-desc':
+                        return b.studentId.localeCompare(a.studentId);
+                    case 'name-asc':
+                        return a.studentName.localeCompare(b.studentName, 'th');
+                    case 'name-desc':
+                        return b.studentName.localeCompare(a.studentName, 'th');
+                    case 'department-asc':
+                        return a.department.localeCompare(b.department, 'th');
+                    case 'department-desc':
+                        return b.department.localeCompare(a.department, 'th');
+                    case 'date-desc':
+                        // สำหรับวันที่ใหม่ไปเก่า
+                        return (b.createdAt?.toDate() || new Date(0)) - (a.createdAt?.toDate() || new Date(0));
+                    case 'date-asc':
+                        // สำหรับวันที่เก่าไปใหม่
+                        return (a.createdAt?.toDate() || new Date(0)) - (b.createdAt?.toDate() || new Date(0));
+                    default:
+                        return 0;
+                }
+            });
+        }
+
+        // อัพเดทฟังก์ชัน renderStudents ให้แสดงจำนวนผลลัพธ์
+        function renderStudents() {
+            const tbody = document.getElementById('students-table');
+
+            // แสดงจำนวนผลลัพธ์
+            const resultsCount = document.createElement('div');
+            resultsCount.style.marginBottom = '15px';
+            resultsCount.style.color = '#666';
+            resultsCount.innerHTML = `พบนักศึกษา <strong>${filteredStudents.length}</strong> คนจากทั้งหมด <strong>${students.length}</strong> คน`;
+
+            const existingCount = document.getElementById('students-results-count');
+            if (existingCount) {
+                existingCount.remove();
+            }
+            resultsCount.id = 'students-results-count';
+
+            const tableContainer = document.querySelector('#admin-students-section .table-container');
+            const existingTable = tableContainer.querySelector('h3');
+            if (existingTable.nextSibling && existingTable.nextSibling.id !== 'students-results-count') {
+                tableContainer.insertBefore(resultsCount, existingTable.nextSibling);
+            }
+
+            if (filteredStudents.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">ไม่พบข้อมูลนักศึกษาที่ค้นหา</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filteredStudents.map(student => {
+                const date = student.createdAt ?
+                    student.createdAt.toDate().toLocaleDateString('th-TH') :
+                    new Date().toLocaleDateString('th-TH');
+
+                return `
+            <tr>
+                <td>${student.studentId}</td>
+                <td>${student.studentName}</td>
+                <td>${student.department}</td>
+                <td>${date}</td>
+                <td>
+                    <button class="btn btn-warning" onclick="editStudent('${student.id}')" style="padding: 8px 16px; margin-right: 5px;">แก้ไข</button>
+                    <button class="btn btn-danger" onclick="deleteStudent('${student.id}')" style="padding: 8px 16px;">ลบ</button>
+                </td>
+            </tr>
+        `;
+            }).join('');
+        }
+
+        // อัพเดทฟังก์ชัน loadStudentsRealtime
+        function loadStudentsRealtime() {
+            studentsUnsubscribe = db.collection('students').orderBy('createdAt', 'desc').onSnapshot((snapshot) => {
+                students = [];
+                snapshot.forEach((doc) => {
+                    students.push({
+                        id: doc.id,
+                        ...doc.data()
+                    });
+                });
+                // เริ่มต้นด้วยการเรียงตามวันที่เพิ่ม (ใหม่ไปเก่า)
+                filteredStudents = [...students];
+                renderStudents();
+            });
+        }
+
 
         // Edit Student
         function editStudent(id) {
